@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Commodity } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText } from 'lucide-react';
+import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
 
 const ALLOWED_SECTORS = ['energy', 'metals', 'commodities', 'forex', 'indices', 'shipping'];
@@ -21,14 +21,13 @@ export default function Prices() {
   const [sectorFilter, setSectorFilter] = useState<string>('all');
   
   // Edit & Add State
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Commodity>>({});
-  const [saving, setSaving] = useState(false);
-  
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState<Partial<Commodity>>({
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Commodity | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [form, setForm] = useState<Partial<Commodity>>({
     symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
   });
+  const [saving, setSaving] = useState(false);
 
   // Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,121 +60,138 @@ export default function Prices() {
     }
   };
 
-  const startEdit = (item: Commodity) => {
-    setEditingId(item.id);
-    setEditForm({
-      price: item.price,
-      status: item.status,
-      is_visible: item.is_visible
+  const openAddModal = () => {
+    setEditingItem(null);
+    setForm({
+      symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
     });
+    setIsModalOpen(true);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
+  const openEditModal = (item: Commodity) => {
+    setEditingItem(item);
+    setForm({ ...item });
+    setIsModalOpen(true);
   };
 
-  const saveEdit = async (item: Commodity) => {
+  const deleteCommodity = async (id: string) => {
     if (!adminUser?.can_manage_prices && adminUser?.role !== 'super_admin') {
-      alert("ليس لديك صلاحية لتعديل الأسعار");
+      alert("ليس لديك صلاحية لحذف الأسعار");
       return;
     }
 
-    if (!editForm.price || editForm.price <= 0) {
+    if (deletingId !== id) {
+      setDeletingId(id);
+      return;
+    }
+
+    try {
+      const { error: err } = await supabase.from('commodities').delete().eq('id', id);
+      if (err) throw err;
+      setCommodities(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء الحذف');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSaveSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!adminUser?.can_manage_prices && adminUser?.role !== 'super_admin') {
+      alert("ليس لديك صلاحية لتعديل/إضافة الأسعار");
+      return;
+    }
+
+    if (!form.price || form.price <= 0) {
        alert("السعر غير صالح");
        return;
     }
     
     try {
       setSaving(true);
-      
-      const newPrice = Number(editForm.price);
-      const oldPrice = item.price;
-      
-      let previous_price = oldPrice;
-      let change_value = null;
-      let change_percent = null;
-      let trend: 'up' | 'down' | 'neutral' = 'neutral';
-      
-      if (newPrice !== oldPrice) {
-        change_value = newPrice - oldPrice;
-        change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
-        trend = newPrice > oldPrice ? 'up' : 'down';
-      } else {
-        previous_price = item.previous_price || previous_price;
-        change_value = item.change_value;
-        change_percent = item.change_percent;
-        trend = item.trend;
-      }
-      
-      const updateData = {
-        price: newPrice,
-        previous_price,
-        change_value,
-        change_percent,
-        trend,
-        status: editForm.status,
-        is_visible: editForm.is_visible,
-        updated_at: new Date().toISOString()
-      };
-      
-      const { error: err } = await supabase
-        .from('commodities')
-        .update(updateData)
-        .eq('id', item.id);
+      const symbol = form.symbol?.toUpperCase();
+
+      if (editingItem) {
+        // Edit mode
+        const newPrice = Number(form.price);
+        const oldPrice = editingItem.price;
         
-      if (err) throw err;
-      
-      setCommodities(prev => prev.map(c => c.id === item.id ? { ...c, ...updateData } : c));
-      setEditingId(null);
+        let previous_price = oldPrice;
+        let change_value = null;
+        let change_percent = null;
+        let trend: 'up' | 'down' | 'neutral' = 'neutral';
+        
+        if (newPrice !== oldPrice) {
+          change_value = newPrice - oldPrice;
+          change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
+          trend = newPrice > oldPrice ? 'up' : 'down';
+        } else {
+          previous_price = editingItem.previous_price || previous_price;
+          change_value = editingItem.change_value;
+          change_percent = editingItem.change_percent;
+          trend = editingItem.trend;
+        }
+        
+        const updateData = {
+          name_ar: form.name_ar,
+          name_en: form.name_en,
+          sector: form.sector,
+          price: newPrice,
+          unit: form.unit || null,
+          source: form.source || null,
+          previous_price,
+          change_value,
+          change_percent,
+          trend,
+          status: form.status,
+          is_visible: form.is_visible,
+          updated_at: new Date().toISOString()
+        };
+        
+        const { error: err } = await supabase
+          .from('commodities')
+          .update(updateData)
+          .eq('id', editingItem.id);
+          
+        if (err) throw err;
+        
+        setCommodities(prev => prev.map(c => c.id === editingItem.id ? { ...c, ...updateData } : c));
+      } else {
+        // Add mode
+        // Check duplicate
+        const { data: existing } = await supabase.from('commodities').select('id').eq('symbol', symbol).single();
+        if (existing) {
+          alert('هذا الرمز موجود مسبقاً');
+          setSaving(false);
+          return;
+        }
+
+        const payload = {
+          ...form,
+          symbol,
+          change_value: 0,
+          change_percent: 0,
+          trend: 'neutral',
+          previous_price: form.price,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error: err } = await supabase.from('commodities').insert([payload]);
+        if (err) throw err;
+        
+        fetchCommodities();
+      }
+
+      setIsModalOpen(false);
+      setForm({
+        symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
+      });
+
     } catch (err: any) {
       console.error(err);
       alert('حدث خطأ أثناء الحفظ');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAddSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!adminUser?.can_manage_prices && adminUser?.role !== 'super_admin') {
-      alert("ليس لديك صلاحية لإضافة الأسعار");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const symbol = addForm.symbol?.toUpperCase();
-      
-      // Check duplicate
-      const { data: existing } = await supabase.from('commodities').select('id').eq('symbol', symbol).single();
-      if (existing) {
-        alert('هذا الرمز موجود مسبقاً');
-        return;
-      }
-
-      const payload = {
-        ...addForm,
-        symbol,
-        change_value: 0,
-        change_percent: 0,
-        trend: 'neutral',
-        previous_price: addForm.price,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: err } = await supabase.from('commodities').insert([payload]);
-      if (err) throw err;
-
-      setIsAddModalOpen(false);
-      setAddForm({
-        symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
-      });
-      fetchCommodities();
-
-    } catch (err: any) {
-      console.error(err);
-      alert('حدث خطأ أثناء الإضافة');
     } finally {
       setSaving(false);
     }
@@ -334,7 +350,7 @@ export default function Prices() {
             </button>
           )}
           <button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={openAddModal}
             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
           >
             <Plus size={18} />
@@ -390,9 +406,7 @@ export default function Prices() {
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
-                   {filtered.map(item => {
-                     const isEditing = editingId === item.id;
-                     return (
+                   {filtered.map(item => (
                        <tr key={item.id} className="hover:bg-slate-50/50">
                          <td className="px-4 py-3 font-medium font-mono text-slate-900" dir="ltr">{item.symbol}</td>
                          <td className="px-4 py-3 text-slate-800">{item.name_ar}</td>
@@ -400,79 +414,48 @@ export default function Prices() {
                            <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs">{item.sector}</span>
                          </td>
                          <td className="px-4 py-3 font-mono font-medium" dir="ltr">
-                           {isEditing ? (
-                             <input 
-                               type="number" 
-                               step="0.0001"
-                               value={editForm.price}
-                               onChange={e => setEditForm({...editForm, price: Number(e.target.value)})}
-                               className="w-24 px-2 py-1 border rounded"
-                             />
-                           ) : (
-                             <span className={item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : ''}>
-                               {item.price}
-                             </span>
-                           )}
+                           <span className={item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : ''}>
+                             {item.price}
+                           </span>
                          </td>
                          <td className="px-4 py-3 text-center text-slate-500 text-xs">
                            {new Date(item.updated_at).toLocaleString('ar-SA', { hour12: false, hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' })}
                          </td>
                          <td className="px-4 py-3 text-center">
-                           {isEditing ? (
-                             <select 
-                               value={editForm.status}
-                               onChange={e => setEditForm({...editForm, status: e.target.value as any})}
-                               className="px-2 py-1 border rounded text-xs"
-                             >
-                               <option value="active">نشط</option>
-                               <option value="suspended">معلق</option>
-                               <option value="closed">مغلق</option>
-                             </select>
-                           ) : (
-                             <span className={`px-2 py-1 rounded-full text-xs ${
-                               item.status === 'active' ? 'bg-green-100 text-green-700' : 
-                               item.status === 'suspended' ? 'bg-orange-100 text-orange-700' : 
-                               'bg-slate-100 text-slate-700'
-                             }`}>
-                               {item.status === 'active' ? 'نشط' : item.status === 'suspended' ? 'معلق' : 'مغلق'}
-                             </span>
-                           )}
+                           <span className={`px-2 py-1 rounded-full text-xs ${
+                             item.status === 'active' ? 'bg-green-100 text-green-700' : 
+                             item.status === 'suspended' ? 'bg-orange-100 text-orange-700' : 
+                             'bg-slate-100 text-slate-700'
+                           }`}>
+                             {item.status === 'active' ? 'نشط' : item.status === 'suspended' ? 'معلق' : 'مغلق'}
+                           </span>
                          </td>
                          <td className="px-4 py-3 text-center">
-                           {isEditing ? (
-                             <input 
-                               type="checkbox" 
-                               checked={editForm.is_visible}
-                               onChange={e => setEditForm({...editForm, is_visible: e.target.checked})}
-                               className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4"
-                             />
-                           ) : (
-                             item.is_visible ? 
-                               <span className="text-green-500 font-bold block text-center">✓</span> : 
-                               <span className="text-slate-300 font-bold block text-center">—</span>
-                           )}
+                           {item.is_visible ? 
+                             <span className="text-green-500 font-bold block text-center">✓</span> : 
+                             <span className="text-slate-300 font-bold block text-center">—</span>
+                           }
                          </td>
                          <td className="px-4 py-3 text-center">
-                           <div className="flex items-center justify-center gap-2">
-                             {isEditing ? (
-                               <>
-                                 <button onClick={cancelEdit} disabled={saving} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-200">
-                                   <X size={16} />
-                                 </button>
-                                 <button onClick={() => saveEdit(item)} disabled={saving} className="p-1.5 text-white bg-primary-600 hover:bg-primary-700 rounded-md">
-                                   <Check size={16} />
-                                 </button>
-                               </>
-                             ) : (
-                               <button onClick={() => startEdit(item)} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md">
-                                 <Edit2 size={16} />
+                           <div className="flex items-center justify-center gap-2 relative">
+                             <button onClick={() => openEditModal(item)} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md">
+                               <Edit2 size={16} />
+                             </button>
+                             <div className="flex flex-col gap-1 items-center">
+                               <button 
+                                 onClick={() => deleteCommodity(item.id)} 
+                                 className={`p-1.5 rounded-md transition ${deletingId === item.id ? 'bg-red-600 text-white shadow min-w-[70px] text-xs font-bold' : 'text-red-500 hover:bg-red-50'}`}
+                               >
+                                 {deletingId === item.id ? 'تأكيد الحذف' : <Trash2 size={16} />}
                                </button>
-                             )}
+                               {deletingId === item.id && (
+                                 <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 hover:text-slate-700">إلغاء</button>
+                               )}
+                             </div>
                            </div>
                          </td>
                        </tr>
-                     );
-                   })}
+                     ))}
                  </tbody>
               </table>
               {filtered.length === 0 && (
@@ -569,27 +552,27 @@ export default function Prices() {
         </div>
       )}
 
-      {/* Manual Add Modal */}
-      {isAddModalOpen && (
+      {/* Add / Edit Modal */}
+      {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-bold">إضافة سعر جديد يدوياً</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+              <h2 className="text-xl font-bold">{editingItem ? 'تعديل السعر' : 'إضافة سعر جديد يدوياً'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
             </div>
             
             <div className="p-4 overflow-y-auto flex-1">
-              <form id="add-commodity-form" onSubmit={handleAddSubmit} className="space-y-4">
+              <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الرمز (Symbol) *</label>
-                    <input type="text" required dir="ltr" placeholder="BTC/USD"
-                      value={addForm.symbol} onChange={e => setAddForm({...addForm, symbol: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none uppercase font-mono" />
+                    <input type="text" required dir="ltr" placeholder="BTC/USD" disabled={!!editingItem}
+                      value={form.symbol} onChange={e => setForm({...form, symbol: e.target.value})}
+                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none uppercase font-mono disabled:bg-slate-100 disabled:text-slate-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                    <select value={addForm.sector} onChange={e => setAddForm({...addForm, sector: e.target.value})}
+                    <select value={form.sector} onChange={e => setForm({...form, sector: e.target.value})}
                       className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
                       {ALLOWED_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -599,12 +582,12 @@ export default function Prices() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربي *</label>
-                    <input type="text" required value={addForm.name_ar} onChange={e => setAddForm({...addForm, name_ar: e.target.value})}
+                    <input type="text" required value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})}
                       className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزي *</label>
-                    <input type="text" required dir="ltr" value={addForm.name_en} onChange={e => setAddForm({...addForm, name_en: e.target.value})}
+                    <input type="text" required dir="ltr" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})}
                       className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" />
                   </div>
                 </div>
@@ -612,25 +595,34 @@ export default function Prices() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">السعر الحالي *</label>
-                    <input type="number" step="0.0001" required value={addForm.price} onChange={e => setAddForm({...addForm, price: Number(e.target.value)})}
+                    <input type="number" step="0.0001" required value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})}
                       className="w-full border rounded-lg px-3 py-2 font-mono focus:ring-primary-500 outline-none" dir="ltr" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة (Unit)</label>
-                    <input type="text" value={addForm.unit || ''} onChange={e => setAddForm({...addForm, unit: e.target.value})}
+                    <input type="text" value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
                       className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="oz, barrel..." />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
-                    <input type="text" value={addForm.source || ''} onChange={e => setAddForm({...addForm, source: e.target.value})}
+                    <input type="text" value={form.source || ''} onChange={e => setForm({...form, source: e.target.value})}
                       className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="Bloomberg, OANDA..." />
                   </div>
                 </div>
                 
-                <div className="flex gap-6 mt-4">
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" id="add_visible" checked={addForm.is_visible} onChange={e => setAddForm({...addForm, is_visible: e.target.checked})}
-                      className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500" />
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الحالة</label>
+                    <select value={form.status} onChange={e => setForm({...form, status: e.target.value as any})}
+                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                      <option value="active">نشط</option>
+                      <option value="suspended">معلق</option>
+                      <option value="closed">مغلق</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input type="checkbox" id="add_visible" checked={form.is_visible} onChange={e => setForm({...form, is_visible: e.target.checked})}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
                     <label htmlFor="add_visible" className="text-sm font-medium text-slate-700">تفعيل الظهور للزوار</label>
                   </div>
                 </div>
@@ -640,7 +632,7 @@ export default function Prices() {
             <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
               <button 
                 type="button" 
-                onClick={() => setIsAddModalOpen(false)} 
+                onClick={() => setIsModalOpen(false)} 
                 className="px-4 py-2 border rounded-lg text-sm bg-white hover:bg-slate-50 transition"
               >
                 إلغاء
@@ -651,7 +643,7 @@ export default function Prices() {
                 disabled={saving} 
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50"
               >
-                {saving ? 'جاري الحفظ...' : 'إضافة'}
+                {saving ? 'جاري الحفظ...' : (editingItem ? 'حفظ التعديلات' : 'إضافة')}
               </button>
             </div>
           </div>

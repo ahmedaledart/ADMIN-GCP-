@@ -42,6 +42,8 @@ export default function Messages() {
     return true;
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const markAsRead = async (id: string, currentStatus: boolean) => {
     if (currentStatus) return; // already read
     if (!checkPermission()) return;
@@ -62,7 +64,11 @@ export default function Messages() {
 
   const deleteMessage = async (id: string) => {
     if (!checkPermission()) return;
-    if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
+    
+    if (deletingId !== id) {
+      setDeletingId(id);
+      return;
+    }
     
     try {
       const { error: err } = await supabase.from('messages').delete().eq('id', id);
@@ -71,6 +77,8 @@ export default function Messages() {
     } catch (err) {
       console.error(err);
       alert('حدث خطأ أثناء الحذف');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -110,12 +118,17 @@ export default function Messages() {
                   </div>
                 </div>
                 
-                <button 
-                  onClick={() => deleteMessage(msg.id)} 
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); deleteMessage(msg.id); }} 
+                    className={`p-2 rounded-lg transition ${deletingId === msg.id ? 'bg-red-600 text-white hover:bg-red-700 text-xs font-bold' : 'text-red-400 hover:text-red-600 hover:bg-red-50'}`}
+                  >
+                    {deletingId === msg.id ? 'تأكيد الحذف؟' : <Trash2 size={18} />}
+                  </button>
+                  {deletingId === msg.id && (
+                    <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="p-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">إلغاء</button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

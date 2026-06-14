@@ -13,6 +13,7 @@ export default function AnalysisPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Analysis | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', content: '', asset_symbol: '', author: '', is_published: true });
   const [saving, setSaving] = useState(false);
 
@@ -113,7 +114,11 @@ export default function AnalysisPage() {
 
   const deleteAnalysis = async (id: string, title: string) => {
     if (!checkPermission()) return;
-    if (!confirm(`هل أنت متأكد من حذف التحليل "${title}"؟\nلا يمكن التراجع عن هذا الإجراء.`)) return;
+    
+    if (deletingId !== id) {
+      setDeletingId(id);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -125,6 +130,7 @@ export default function AnalysisPage() {
       alert("حدث خطأ أثناء الحذف");
     } finally {
       setLoading(false);
+      setDeletingId(null);
     }
   }
 
@@ -200,13 +206,21 @@ export default function AnalysisPage() {
                       </button>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2 relative">
                       <button onClick={() => openEditModal(item)} className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md">
                         <Edit2 size={18} />
                       </button>
-                      <button onClick={() => deleteAnalysis(item.id, item.title)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-md">
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex flex-col gap-1 items-center">
+                        <button 
+                          onClick={() => deleteAnalysis(item.id, item.title)} 
+                          className={`p-1.5 rounded-md transition ${deletingId === item.id ? 'bg-red-600 text-white shadow min-w-[70px] text-xs font-bold' : 'text-red-600 hover:bg-red-50'}`}
+                        >
+                          {deletingId === item.id ? 'تأكيد الحذف' : <Trash2 size={18} />}
+                        </button>
+                        {deletingId === item.id && (
+                          <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 hover:text-slate-700">إلغاء</button>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
