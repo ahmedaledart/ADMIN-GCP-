@@ -168,8 +168,10 @@ export default function Prices() {
           return;
         }
 
+        const { id, created_at, ...cleanForm } = form;
+        
         const payload = {
-          ...form,
+          ...cleanForm,
           symbol,
           change_value: 0,
           change_percent: 0,
@@ -299,8 +301,10 @@ export default function Prices() {
             trend = price > previous_price ? 'up' : 'down';
           }
           
+          const { id, created_at, ...restExisting } = existing;
+          
           rowsToUpsert.push({
-            ...existing,
+            ...restExisting,
             price,
             previous_price,
             change_value,
