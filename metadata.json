@@ -1,0 +1,8 @@
+{
+  "name": "GCP Admin Dashboard",
+  "description": "لوحة تحكم إدارية حديثة لمنصة GCP للتحكم في الأسعار والأخبار والتحليلات والزوار.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
