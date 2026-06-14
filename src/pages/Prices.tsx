@@ -206,15 +206,50 @@ export default function Prices() {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        // Validate headers loosely and create mapped preview
-        const data = results.data.filter((row: any) => row.symbol && row.price);
-        setImportData(data);
+        const data = results.data
+          .map((row: any) => {
+            const rowData: any = {};
+            Object.keys(row).forEach(key => {
+               const val = typeof row[key] === 'string' ? row[key].trim() : row[key];
+               const cleanKey = key.toLowerCase().trim();
+               rowData[cleanKey] = val;
+            });
+            return rowData;
+          })
+          .filter((row: any) => {
+            if (!row.symbol) return false;
+            const p = Number(row.price);
+            if (isNaN(p) || row.price === undefined || row.price === null || row.price === '') return false;
+            return true;
+          })
+          .map((row: any) => ({
+             symbol: row.symbol.toUpperCase(),
+             name_ar: row.name_ar || '',
+             name_en: row.name_en || '',
+             sector: (row.sector || '').toLowerCase(),
+             price: Number(row.price),
+             unit: row.unit || '',
+             source: row.source || 'Manual CSV'
+          }));
+          
+        const uniqueMap = new Map();
+        data.forEach((r: any) => uniqueMap.set(r.symbol, r));
+        const finalData = Array.from(uniqueMap.values());
+
+        if (finalData.length === 0) {
+           alert("لم يتم العثور على بيانات صالحة. تأكد من وجود الأعمدة المطلوبة بشكل صحيح واستبعاد الحقول الفارغة أو غير الرقمية للسعر.");
+        }
+        setImportData(finalData);
         setImportResult(null);
       },
       error: (error) => {
         alert("خطأ في قراءة الملف: " + error.message);
       }
     });
+    
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
   const applyImport = async () => {
@@ -225,99 +260,99 @@ export default function Prices() {
 
     if (importData.length === 0) return;
 
-    try {
-      setImporting(true);
-      
-      // We will prepare rows. Papa.parsing keeps multiple duplicate symbols if exists in csv, 
-      // the prompt requires using the last one.
-      const rowMap = new Map();
-      importData.forEach((row: any) => {
-        rowMap.set(row.symbol.toUpperCase(), row);
-      });
-      
-      const uniqueRows = Array.from(rowMap.values());
+    setImporting(true);
+    let addedCount = 0;
+    let updatedCount = 0;
+    
+    const importProcess = async () => {
       const now = new Date().toISOString();
 
-      // Fetch existing commodities to calculate previous_price and changes
       const { data: existingRecords, error: fetchErr } = await supabase
         .from('commodities')
-        .select('symbol, price, previous_price, change_value, change_percent, trend');
+        .select('*');
 
       if (fetchErr) throw fetchErr;
 
       const existingMap = new Map();
       existingRecords?.forEach(r => existingMap.set(r.symbol, r));
 
-      const rowsToUpsert = uniqueRows.map(row => {
-        const symbol = row.symbol.toUpperCase();
-        const price = Number(row.price) || 0;
-        
+      const rowsToUpsert: any[] = [];
+
+      importData.forEach(row => {
+        const symbol = row.symbol;
+        const price = row.price;
         const existing = existingMap.get(symbol);
         
-        let previous_price = price;
-        let change_value = 0;
-        let change_percent = 0;
-        let trend = 'neutral';
-
+        const sectorRaw = (row.sector || existing?.sector || 'commodities').toLowerCase();
+        const sector = ALLOWED_SECTORS.includes(sectorRaw) ? sectorRaw : 'commodities';
+        
         if (existing) {
+          let previous_price = existing.price;
+          let change_value = existing.change_value;
+          let change_percent = existing.change_percent;
+          let trend = existing.trend;
+
           if (existing.price !== price) {
             previous_price = existing.price;
             change_value = price - existing.price;
-             change_percent = previous_price ? (change_value / previous_price) * 100 : 0;
-             trend = price > previous_price ? 'up' : 'down';
-          } else {
-            previous_price = existing.previous_price || price;
-            change_value = existing.change_value;
-            change_percent = existing.change_percent;
-            trend = existing.trend;
+            change_percent = previous_price ? (change_value / previous_price) * 100 : 0;
+            trend = price > previous_price ? 'up' : 'down';
           }
+          
+          rowsToUpsert.push({
+            ...existing,
+            price,
+            previous_price,
+            change_value,
+            change_percent,
+            trend,
+            source: row.source || existing.source || 'Manual CSV',
+            updated_at: now
+          });
+          updatedCount++;
+        } else {
+          rowsToUpsert.push({
+            symbol,
+            name_ar: row.name_ar || 'غير مسمى',
+            name_en: row.name_en || 'Unnamed',
+            sector,
+            price,
+            unit: row.unit || null,
+            source: row.source || 'Manual CSV',
+            previous_price: price,
+            change_value: 0,
+            change_percent: 0,
+            trend: 'neutral',
+            status: 'active',
+            is_visible: true,
+            updated_at: now
+          });
+          addedCount++;
         }
-
-        // Sector lowercase
-        const sector = (row.sector || 'commodities').toLowerCase();
-        
-        return {
-          symbol,
-          name_ar: row.name_ar || (existing ? undefined : 'غير مسمى'),
-          name_en: row.name_en || (existing ? undefined : 'Unnamed'),
-          sector: ALLOWED_SECTORS.includes(sector) ? sector : 'commodities',
-          price,
-          unit: row.unit || undefined,
-          source: row.source || undefined,
-          previous_price,
-          change_value,
-          change_percent,
-          trend,
-          updated_at: now
-        };
       });
 
-      // Upsert
-      const { error: upsertErr } = await supabase
-        .from('commodities')
-        .upsert(rowsToUpsert, { onConflict: 'symbol' });
+      if (rowsToUpsert.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('commodities')
+          .upsert(rowsToUpsert, { onConflict: 'symbol' });
+          
+        if (upsertErr) throw upsertErr;
+      }
+    };
 
-      if (upsertErr) throw upsertErr;
+    try {
+      await Promise.race([
+        importProcess(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('انتهى وقت الاتصال (Timeout)')), 5000))
+      ]);
 
-      // Determine added vs updated count. We don't have perfect metrics returned by upsert easily in JS client,
-      // so approximate based on our map.
-      let added = 0;
-      let updated = 0;
-      uniqueRows.forEach(row => {
-        if (existingMap.has(row.symbol.toUpperCase())) updated++;
-        else added++;
-      });
-
-      setImportResult({ added, updated, failed: 0 });
+      setImportResult({ added: addedCount, updated: updatedCount, failed: 0 });
       setImportData([]);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      
-      // Refresh list
       fetchCommodities();
 
     } catch (err: any) {
-      console.error(err);
-      alert("خطأ أثناء الاستيراد");
+      console.error("Import error:", err);
+      alert(err.message || "خطأ أثناء الاستيراد");
       setImportResult({ added: 0, updated: 0, failed: importData.length });
     } finally {
       setImporting(false);

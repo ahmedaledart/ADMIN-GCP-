@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Analysis } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Sparkles } from 'lucide-react';
 
 export default function AnalysisPage() {
   const { adminUser } = useAuthStore();
@@ -16,6 +16,49 @@ export default function AnalysisPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', content: '', asset_symbol: '', author: '', is_published: true });
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const generateAIContent = async () => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      alert("البيانات الخاصة بـ VITE_GEMINI_API_KEY غير متوفرة في بيئة العمل. (قم بإضافتها في المتغيرات ولن تعمل ميزة الذكاء ما لم تقم بذلك)");
+      return;
+    }
+    if (!form.title && !form.asset_symbol) {
+      alert("يرجى كتابة العنوان أو رمز السلعة قبل طلب التحليل من الذكاء الاصطناعي.");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey });
+      
+      let prompt = 'أنت خبير اقتصادي ومحلل أسواق مالية لك خبرة أكثر من 20 عاماً. مطلوب منك كتابة تحليل مالي/اقتصادي دقيق ومختصر واحترافي استناداً إلى المعطيات التالية:\n\n';
+      
+      if (form.title) prompt += `- العنوان المقترح: ${form.title}\n`;
+      if (form.asset_symbol) prompt += `- الأداة المالية: ${form.asset_symbol}\n`;
+      if (form.content) prompt += `- رؤوس أقلام إضافية من المحلل: ${form.content}\n`;
+      
+      prompt += '\nالرجاء كتابة التحليل باللغة العربية، وتقسيمه إلى فقرات مرتبة مع استخدام الـ Markdown. تجنب المقدمات والمجاملات وركز في صلب التحليل الفني والأساسي للسلعة.';
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+      });
+
+      if (response && response.text) {
+        setForm(prev => ({ ...prev, content: response.text }));
+      } else {
+        alert("لم يتم إرجاع نتيجة من الذكاء الاصطناعي.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي: ' + (err as Error).message);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     fetchAnalyses();
@@ -278,7 +321,22 @@ export default function AnalysisPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">التحليل *</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-slate-700">التحليل *</label>
+                    <button 
+                      type="button"
+                      onClick={generateAIContent}
+                      disabled={generating}
+                      className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-md border border-indigo-200 transition disabled:opacity-50"
+                    >
+                      {generating ? (
+                         <div className="w-3 h-3 border-2 border-indigo-700 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                         <Sparkles size={14} />
+                      )}
+                      إنشاء بالذكاء الاصطناعي
+                    </button>
+                  </div>
                   <textarea 
                     required 
                     rows={10} 
