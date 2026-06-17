@@ -33,6 +33,8 @@ export interface Commodity {
   is_visible: boolean;
   unit: string | null;
   source: string | null;
+  last_update_method?: string | null;
+  updated_by?: string | null;
   updated_at: string;
 }
 

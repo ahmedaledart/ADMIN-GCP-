@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent, useRef } from 'react';
+import { useState, useEffect, FormEvent, useRef, ChangeEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Commodity } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -147,6 +147,8 @@ export default function Prices() {
           trend,
           status: form.status,
           is_visible: form.is_visible,
+          last_update_method: 'admin',
+          updated_by: adminUser?.email || null,
           updated_at: new Date().toISOString()
         };
         
@@ -177,6 +179,8 @@ export default function Prices() {
           change_percent: 0,
           trend: 'neutral',
           previous_price: form.price,
+          last_update_method: 'admin',
+          updated_by: adminUser?.email || null,
           updated_at: new Date().toISOString()
         };
 
@@ -200,7 +204,7 @@ export default function Prices() {
   };
 
   // CSV Import Logic
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -311,6 +315,8 @@ export default function Prices() {
             change_percent,
             trend,
             source: row.source || existing.source || 'Manual CSV',
+            last_update_method: 'csv',
+            updated_by: adminUser?.email || null,
             updated_at: now
           });
           updatedCount++;
@@ -329,6 +335,8 @@ export default function Prices() {
             trend: 'neutral',
             status: 'active',
             is_visible: true,
+            last_update_method: 'csv',
+            updated_by: adminUser?.email || null,
             updated_at: now
           });
           addedCount++;
