@@ -15,6 +15,14 @@ export default function Prices() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  const [isQuickAddCommodityOpen, setIsQuickAddCommodityOpen] = useState(false);
+  const [quickCommodityForm, setQuickCommodityForm] = useState({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '' });
+  
+  const [isQuickAddUnitOpen, setIsQuickAddUnitOpen] = useState(false);
+  const [quickUnitForm, setQuickUnitForm] = useState({ unit_code: '', unit_ar: '', unit_en: '' });
+  
+  const [savingQuick, setSavingQuick] = useState(false);
+  
   // Tabs
   const [activeTab, setActiveTab] = useState<'list' | 'import'>('list');
 
@@ -99,6 +107,67 @@ export default function Prices() {
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleQuickSaveCommodity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCommodityForm.symbol || !quickCommodityForm.name_ar || !quickCommodityForm.name_en || !quickCommodityForm.sector) return;
+    setSavingQuick(true);
+    const sym = quickCommodityForm.symbol.toUpperCase();
+    const { data: existing } = await supabase.from('commodity_catalog').select('id').eq('symbol', sym).single();
+    if (existing) {
+      alert('هذا الرمز موجود مسبقاً');
+      setSavingQuick(false);
+      return;
+    }
+    const payload = {
+      symbol: sym,
+      name_ar: quickCommodityForm.name_ar,
+      name_en: quickCommodityForm.name_en,
+      sector: quickCommodityForm.sector.toLowerCase(),
+      default_unit: quickCommodityForm.default_unit,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    };
+    const { data, error: err } = await supabase.from('commodity_catalog').insert([{ ...payload, created_at: new Date().toISOString() }]).select().single();
+    if (err) {
+      console.error(err);
+      alert('خطأ أثناء الحفظ');
+    } else if (data) {
+      setCatalogCommodities([...catalogCommodities, data]);
+      setForm({...form, symbol: sym, name_ar: payload.name_ar, name_en: payload.name_en, sector: payload.sector, unit: payload.default_unit});
+      setIsQuickAddCommodityOpen(false);
+      setQuickCommodityForm({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '' });
+    }
+    setSavingQuick(false);
+  };
+
+  const handleQuickSaveUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickUnitForm.unit_code) return;
+    setSavingQuick(true);
+    const { data: existing } = await supabase.from('units_catalog').select('id').eq('unit_code', quickUnitForm.unit_code).single();
+    if (existing) {
+      alert('هذه الوحدة موجودة مسبقاً');
+      setSavingQuick(false);
+      return;
+    }
+    const payload = {
+      ...quickUnitForm,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    };
+    const { data, error: err } = await supabase.from('units_catalog').insert([{ ...payload, created_at: new Date().toISOString() }]).select().single();
+    if (err) {
+      console.error(err);
+      alert('خطأ أثناء حفظ الوحدة');
+    } else if (data) {
+      setCatalogUnits([...catalogUnits, data]);
+      setForm({...form, unit: payload.unit_code});
+      setIsQuickAddUnitOpen(false);
+      setQuickUnitForm({ unit_code: '', unit_ar: '', unit_en: '' });
+    }
+    setSavingQuick(false);
   };
 
   const handleSaveSubmit = async (e: FormEvent) => {
@@ -714,7 +783,9 @@ export default function Prices() {
                       </select>
                     </div>
                     {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
-                      <p className="text-xs text-slate-500 mt-1">هل السلعة غير موجودة؟ <a href="/ADMIN-GCP-/" className="text-primary-600 hover:underline">أضفها من الإعدادات</a></p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        هل السلعة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddCommodityOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
+                      </p>
                     )}
                   </div>
                   <div>
@@ -757,7 +828,9 @@ export default function Prices() {
                       )}
                     </select>
                     {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
-                      <p className="text-xs text-slate-500 mt-1">هل الوحدة غير موجودة؟ <a href="/ADMIN-GCP-/" className="text-primary-600 hover:underline">أضفها من الإعدادات</a></p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        هل الوحدة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddUnitOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
+                      </p>
                     )}
                   </div>
                   <div>
@@ -806,6 +879,91 @@ export default function Prices() {
           </div>
         </div>
       )}
+
+      {isQuickAddCommodityOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg text-slate-800">إضافة سلعة كمرجع سريع</h3>
+              <button disabled={savingQuick} onClick={() => setIsQuickAddCommodityOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleQuickSaveCommodity} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الرمز *</label>
+                    <input required type="text" value={quickCommodityForm.symbol} onChange={e => setQuickCommodityForm({...quickCommodityForm, symbol: e.target.value.toUpperCase()})} className="w-full border rounded-lg px-3 py-2 uppercase" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة *</label>
+                    <input required type="text" value={quickCommodityForm.default_unit} onChange={e => setQuickCommodityForm({...quickCommodityForm, default_unit: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
+                    <input required type="text" value={quickCommodityForm.name_ar} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
+                    <input required type="text" value={quickCommodityForm.name_en} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
+                  <select required value={quickCommodityForm.sector} onChange={e => setQuickCommodityForm({...quickCommodityForm, sector: e.target.value})} className="w-full border rounded-lg px-3 py-2 bg-white">
+                    {ALLOWED_SECTORS.map(sec => <option key={sec} value={sec}>{sec}</option>)}
+                  </select>
+                </div>
+                <div className="pt-4 flex justify-end gap-3">
+                  <button type="button" onClick={() => setIsQuickAddCommodityOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="submit" disabled={savingQuick} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
+                    {savingQuick ? 'جاري الحفظ...' : 'إضافة واستخدام'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isQuickAddUnitOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-lg text-slate-800">إضافة وحدة سريعة</h3>
+              <button disabled={savingQuick} onClick={() => setIsQuickAddUnitOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleQuickSaveUnit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">الكود (مثال: barrel) *</label>
+                  <input required type="text" value={quickUnitForm.unit_code} onChange={e => setQuickUnitForm({...quickUnitForm, unit_code: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
+                  <input required type="text" value={quickUnitForm.unit_ar} onChange={e => setQuickUnitForm({...quickUnitForm, unit_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
+                  <input required type="text" value={quickUnitForm.unit_en} onChange={e => setQuickUnitForm({...quickUnitForm, unit_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                </div>
+                <div className="pt-4 flex justify-end gap-3">
+                  <button type="button" onClick={() => setIsQuickAddUnitOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="submit" disabled={savingQuick} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
+                    {savingQuick ? 'جاري الحفظ...' : 'إضافة واستخدام'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
