@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://uqqbbaylcmmtyutymqpa.supabase.co";
-// Important: Must use correct publishable key from environment.
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_placeholder";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('إعدادات Supabase غير مكتملة');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
