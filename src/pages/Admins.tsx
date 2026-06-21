@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import type { AdminUser, AdminRole } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Plus, Edit2, ShieldAlert, Check, X, ShieldCheck } from 'lucide-react';
+import { Plus, Edit2, ShieldAlert, Check, X, ShieldCheck, Trash2 } from 'lucide-react';
 
 export default function Admins() {
   const { adminUser: currentUser } = useAuthStore();
@@ -151,6 +151,39 @@ export default function Admins() {
     }
   }
 
+  const deleteAdmin = async (item: AdminUser) => {
+    if (currentUser?.role !== 'super_admin' && !currentUser?.can_manage_admins) {
+      alert("ليس لديك صلاحية لتنفيذ هذه العملية");
+      return;
+    }
+    if (item.id === currentUser?.id || item.email === currentUser?.email) {
+      alert("لا يمكنك حذف حسابك الخاص");
+      return;
+    }
+    
+    // Check if it's the last super_admin
+    if (item.role === 'super_admin') {
+       const superAdmins = admins.filter(a => a.role === 'super_admin');
+       if (superAdmins.length <= 1) {
+         alert("لا يمكن حذف آخر سوبر أدمن في النظام!");
+         return;
+       }
+    }
+
+    if (!window.confirm("التأكيد:\nهل أنت متأكد من حذف هذا الأدمن من لوحة التحكم؟\nيمكنك استخدام خيار (التعطيل) بدلاً من الحذف.\n\nملاحظة: تم حذف صلاحيات الأدمن من لوحة التحكم، وإذا أردت حذف حساب الدخول نهائيًا يجب حذفه من Supabase Authentication.")) {
+       return;
+    }
+
+    try {
+       const { error: err } = await supabase.from('admin_users').delete().eq('email', item.email);
+       if (err) throw err;
+       setAdmins(prev => prev.filter(a => a.email !== item.email));
+    } catch (err) {
+       console.error(err);
+       alert("حدث خطأ أثناء الحذف");
+    }
+  };
+
   if (loading && admins.length === 0) return <div className="p-8 text-center">جاري التحميل...</div>;
   if (error) return <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>;
 
@@ -211,14 +244,23 @@ export default function Admins() {
                       {item.is_active ? 'نشط' : 'معطل'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-center flex justify-center">
-                    <button 
-                      onClick={() => openEditModal(item)} 
-                      className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md"
-                      title="تعديل"
-                    >
-                      <Edit2 size={18} />
-                    </button>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-2">
+                      <button 
+                        onClick={() => openEditModal(item)} 
+                        className="p-1.5 text-primary-600 hover:bg-primary-50 rounded-md"
+                        title="تعديل"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => deleteAdmin(item)} 
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-md"
+                        title="حذف"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

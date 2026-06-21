@@ -1,8 +1,8 @@
 import { useState, useEffect, FormEvent, useRef, ChangeEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Commodity } from '../types';
+import type { Commodity, CommodityCatalog, UnitsCatalog } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2 } from 'lucide-react';
+import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare } from 'lucide-react';
 import Papa from 'papaparse';
 
 const ALLOWED_SECTORS = ['energy', 'metals', 'commodities', 'forex', 'indices', 'shipping'];
@@ -10,6 +10,8 @@ const ALLOWED_SECTORS = ['energy', 'metals', 'commodities', 'forex', 'indices', 
 export default function Prices() {
   const { adminUser } = useAuthStore();
   const [commodities, setCommodities] = useState<Commodity[]>([]);
+  const [catalogCommodities, setCatalogCommodities] = useState<CommodityCatalog[]>([]);
+  const [catalogUnits, setCatalogUnits] = useState<UnitsCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -33,25 +35,27 @@ export default function Prices() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importData, setImportData] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{added: number, updated: number, failed: number} | null>(null);
+  const [importResult, setImportResult] = useState<{added: number, updated: number, failed: number, warnings: string[]} | null>(null);
 
   useEffect(() => {
-    fetchCommodities();
+    fetchData();
   }, []);
 
-  const fetchCommodities = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const { data, error: err } = await supabase
-        .from('commodities')
-        .select('*')
-        .order('sector')
-        .order('symbol')
-        .limit(50);
+      const [commsRes, catCommsRes, catUnitsRes] = await Promise.all([
+        supabase.from('commodities').select('*').order('sector').order('symbol').limit(50),
+        supabase.from('commodity_catalog').select('*').eq('is_active', true),
+        supabase.from('units_catalog').select('*').eq('is_active', true)
+      ]);
         
-      if (err) throw err;
-      setCommodities(data || []);
+      if (commsRes.error) throw commsRes.error;
+      
+      setCommodities(commsRes.data || []);
+      setCatalogCommodities(catCommsRes.data || []);
+      setCatalogUnits(catUnitsRes.data || []);
     } catch (err: any) {
       console.error(err);
       setError('حدث خطأ في جلب بيانات الأسعار');
@@ -269,6 +273,7 @@ export default function Prices() {
     setImporting(true);
     let addedCount = 0;
     let updatedCount = 0;
+    const warnings: string[] = [];
     
     const importProcess = async () => {
       const now = new Date().toISOString();
@@ -283,65 +288,119 @@ export default function Prices() {
       existingRecords?.forEach(r => existingMap.set(r.symbol, r));
 
       const rowsToUpsert: any[] = [];
+      const isSuperAdmin = adminUser?.role === 'super_admin';
 
-      importData.forEach(row => {
+      for (const row of importData) {
         const symbol = row.symbol;
         const price = row.price;
+        
+        let catalogCommodity = catalogCommodities.find(c => c.symbol === symbol);
+        
+        if (!catalogCommodity) {
+          if (isSuperAdmin) {
+            // Auto add
+            const { data: newCatItem, error: newCatErr } = await supabase.from('commodity_catalog').insert([{
+              symbol,
+              name_ar: row.name_ar || symbol,
+              name_en: row.name_en || symbol,
+              sector: (row.sector || 'commodities').toLowerCase(),
+              default_unit: row.unit || '',
+              is_active: true,
+              updated_at: now
+            }]).select().single();
+            if (newCatErr) {
+               console.error("Failed to add to catalog", newCatErr);
+            } else {
+               catalogCommodity = newCatItem;
+            }
+          } else {
+            warnings.push(`الرمز ${symbol} غير موجود في قائمة السلع. تم تجاهله.`);
+            continue; // Skip
+          }
+        }
+        
+        let unit = row.unit || (catalogCommodity ? catalogCommodity.default_unit : null);
+        
+        // Handle Unit Catalog warning
+        if (unit) {
+           const unitExists = catalogUnits.find(u => u.unit_code === unit || u.unit_ar === unit || u.unit_en === unit);
+           if (!unitExists) {
+             if (isSuperAdmin) {
+               await supabase.from('units_catalog').insert([{
+                 unit_code: unit,
+                 unit_ar: unit,
+                 unit_en: unit,
+                 is_active: true,
+                 updated_at: now
+               }]);
+               // don't really need to fetch it back, just proceed
+             } else {
+               warnings.push(`الوحدة ${unit} غير موجودة في المرجع.`);
+             }
+           }
+        }
+
         const existing = existingMap.get(symbol);
         
-        const sectorRaw = (row.sector || existing?.sector || 'commodities').toLowerCase();
-        const sector = ALLOWED_SECTORS.includes(sectorRaw) ? sectorRaw : 'commodities';
-        
-        if (existing) {
-          let previous_price = existing.price;
-          let change_value = existing.change_value;
-          let change_percent = existing.change_percent;
-          let trend = existing.trend;
+        // Default from catalog
+        const nameAr = catalogCommodity?.name_ar || row.name_ar || existing?.name_ar || symbol;
+        const nameEn = catalogCommodity?.name_en || row.name_en || existing?.name_en || symbol;
+        const sector = catalogCommodity?.sector || row.sector || existing?.sector || 'commodities';
 
-          if (existing.price !== price) {
-            previous_price = existing.price;
-            change_value = price - existing.price;
-            change_percent = previous_price ? (change_value / previous_price) * 100 : 0;
-            trend = price > previous_price ? 'up' : 'down';
-          }
-          
-          const { id, created_at, ...restExisting } = existing;
-          
-          rowsToUpsert.push({
-            ...restExisting,
-            price,
-            previous_price,
-            change_value,
-            change_percent,
-            trend,
-            source: row.source || existing.source || 'Manual CSV',
-            last_update_method: 'csv',
-            updated_by: adminUser?.email || null,
-            updated_at: now
-          });
-          updatedCount++;
+        if (existing) {
+           let previous_price = existing.price;
+           let change_value = existing.change_value;
+           let change_percent = existing.change_percent;
+           let trend = existing.trend;
+
+           if (existing.price !== price) {
+             previous_price = existing.price;
+             change_value = price - existing.price;
+             change_percent = previous_price ? (change_value / previous_price) * 100 : 0;
+             trend = price > previous_price ? 'up' : 'down';
+           }
+           
+           const { id, created_at, ...restExisting } = existing;
+           
+           rowsToUpsert.push({
+             ...restExisting,
+             name_ar: nameAr,
+             name_en: nameEn,
+             sector,
+             price,
+             unit,
+             previous_price,
+             change_value,
+             change_percent,
+             trend,
+             source: row.source || existing.source || 'Manual CSV',
+             last_update_method: 'csv',
+             updated_by: adminUser?.email || null,
+             updated_at: now
+           });
+           updatedCount++;
         } else {
-          rowsToUpsert.push({
-            symbol,
-            name_ar: row.name_ar || 'غير مسمى',
-            name_en: row.name_en || 'Unnamed',
-            sector,
-            price,
-            unit: row.unit || null,
-            source: row.source || 'Manual CSV',
-            previous_price: price,
-            change_value: 0,
-            change_percent: 0,
-            trend: 'neutral',
-            status: 'active',
-            is_visible: true,
-            last_update_method: 'csv',
-            updated_by: adminUser?.email || null,
-            updated_at: now
-          });
-          addedCount++;
+           rowsToUpsert.push({
+             symbol,
+             name_ar: nameAr,
+             name_en: nameEn,
+             sector,
+             price,
+             unit,
+             source: row.source || 'Manual CSV',
+             previous_price: price,
+             change_value: 0,
+             change_percent: 0,
+             trend: 'neutral',
+             status: 'active',
+             is_visible: true,
+             last_update_method: 'csv',
+             updated_by: adminUser?.email || null,
+             updated_at: now
+           });
+           addedCount++;
         }
-      });
+      }
 
       if (rowsToUpsert.length > 0) {
         const { error: upsertErr } = await supabase
@@ -358,14 +417,14 @@ export default function Prices() {
         new Promise((_, reject) => setTimeout(() => reject(new Error('انتهى وقت الاتصال (Timeout)')), 5000))
       ]);
 
-      setImportResult({ added: addedCount, updated: updatedCount, failed: 0 });
+      setImportResult({ added: addedCount, updated: updatedCount, failed: importData.length - addedCount - updatedCount, warnings });
       setImportData([]);
-      fetchCommodities();
+      fetchData();
 
     } catch (err: any) {
       console.error("Import error:", err);
       alert(err.message || "خطأ أثناء الاستيراد");
-      setImportResult({ added: 0, updated: 0, failed: importData.length });
+      setImportResult({ added: 0, updated: 0, failed: importData.length, warnings: ["خطأ أثناء الاستيراد"] });
     } finally {
       setImporting(false);
     }
@@ -583,15 +642,23 @@ export default function Prices() {
             )}
 
             {importResult && (
-              <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg flex gap-3">
-                <Check className="mt-0.5 shrink-0" />
+              <div className={`p-4 rounded-lg flex gap-3 ${importResult.failed > 0 || (importResult.warnings && importResult.warnings.length > 0) ? 'bg-orange-50 border border-orange-200 text-orange-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
+                {importResult.failed > 0 ? <AlertCircle className="mt-0.5 shrink-0" /> : <Check className="mt-0.5 shrink-0" />}
                 <div>
                   <h4 className="font-bold">اكتمل الاستيراد</h4>
                   <ul className="text-sm mt-1 list-disc list-inside">
                     <li>تم إضافة: {importResult.added}</li>
                     <li>تم تحديث: {importResult.updated}</li>
-                    <li>فشل: {importResult.failed}</li>
+                    {importResult.failed > 0 && <li>فشل: {importResult.failed}</li>}
                   </ul>
+                  {importResult.warnings && importResult.warnings.length > 0 && (
+                    <div className="mt-2 text-xs">
+                      <p className="font-bold mb-1">ملاحظات التحذير:</p>
+                      <ul className="list-disc list-inside">
+                        {importResult.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -602,7 +669,7 @@ export default function Prices() {
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-bold">{editingItem ? 'تعديل السعر' : 'إضافة سعر جديد يدوياً'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
@@ -612,30 +679,62 @@ export default function Prices() {
               <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الرمز (Symbol) *</label>
-                    <input type="text" required dir="ltr" placeholder="BTC/USD" disabled={!!editingItem}
-                      value={form.symbol} onChange={e => setForm({...form, symbol: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none uppercase font-mono disabled:bg-slate-100 disabled:text-slate-500" />
+                    <label className="block text-sm font-medium text-slate-700 mb-1">السلعة *</label>
+                    <div className="flex gap-2">
+                      <select 
+                        required
+                        disabled={!!editingItem}
+                        value={form.symbol} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setForm({...form, symbol: val});
+                          if (!editingItem) {
+                            const found = catalogCommodities.find(c => c.symbol === val);
+                            if (found) {
+                              setForm(prev => ({
+                                ...prev,
+                                symbol: val,
+                                name_ar: found.name_ar,
+                                name_en: found.name_en,
+                                sector: found.sector,
+                                unit: found.default_unit
+                              }));
+                            }
+                          }
+                        }}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none uppercase bg-white disabled:bg-slate-100 disabled:text-slate-500"
+                      >
+                        <option value="">-- اختر السلعة --</option>
+                        {catalogCommodities.map(c => (
+                          <option key={c.id} value={c.symbol}>{c.symbol} - {c.name_ar} ({c.sector})</option>
+                        ))}
+                        {editingItem && !catalogCommodities.find(c => c.symbol === editingItem.symbol) && (
+                          <option value={editingItem.symbol}>{editingItem.symbol}</option>
+                        )}
+                      </select>
+                    </div>
+                    {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
+                      <p className="text-xs text-slate-500 mt-1">هل السلعة غير موجودة؟ <a href="/ADMIN-GCP-/" className="text-primary-600 hover:underline">أضفها من الإعدادات</a></p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                    <select value={form.sector} onChange={e => setForm({...form, sector: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
-                      {ALLOWED_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <input type="text" readOnly disabled
+                      value={form.sector} 
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربي *</label>
-                    <input type="text" required value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" />
+                    <input type="text" readOnly disabled value={form.name_ar} 
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزي *</label>
-                    <input type="text" required dir="ltr" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" />
+                    <input type="text" dir="ltr" readOnly disabled value={form.name_en} 
+                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
                   </div>
                 </div>
 
@@ -647,8 +746,19 @@ export default function Prices() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة (Unit)</label>
-                    <input type="text" value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="oz, barrel..." />
+                    <select value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
+                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                      <option value="">-- اختياري --</option>
+                      {catalogUnits.map((u: UnitsCatalog) => (
+                        <option key={u.id} value={u.unit_code}>{u.unit_ar} ({u.unit_code})</option>
+                      ))}
+                      {form.unit && !catalogUnits.find((u: UnitsCatalog) => u.unit_code === form.unit) && (
+                        <option value={form.unit}>{form.unit}</option>
+                      )}
+                    </select>
+                    {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
+                      <p className="text-xs text-slate-500 mt-1">هل الوحدة غير موجودة؟ <a href="/ADMIN-GCP-/" className="text-primary-600 hover:underline">أضفها من الإعدادات</a></p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
@@ -687,7 +797,7 @@ export default function Prices() {
               <button 
                 type="submit" 
                 form="add-commodity-form" 
-                disabled={saving} 
+                disabled={saving || !form.symbol} 
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50"
               >
                 {saving ? 'جاري الحفظ...' : (editingItem ? 'حفظ التعديلات' : 'إضافة')}

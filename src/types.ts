@@ -94,3 +94,25 @@ export interface PlatformSettings {
   maintenance_mode: boolean;
   updated_at: string;
 }
+
+export interface CommodityCatalog {
+  id: string;
+  symbol: string;
+  name_ar: string;
+  name_en: string;
+  sector: string;
+  default_unit: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UnitsCatalog {
+  id: string;
+  unit_code: string;
+  unit_ar: string;
+  unit_en: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
