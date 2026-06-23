@@ -42,19 +42,22 @@ export default function CommodityCatalogTab() {
     e.preventDefault();
     if (!form.symbol || !form.name_ar || !form.name_en || !form.sector || !form.default_unit) return;
 
-    const formattedSymbol = form.symbol.toUpperCase();
-    const formattedSector = form.sector.toLowerCase();
+    const formattedSymbol = form.symbol.trim().toUpperCase();
+    const formattedSector = form.sector.trim().toLowerCase();
 
     setSaving(true);
     setError(null);
 
-    // Check if symbol exists implicitly by letting DB handle or explicit check
+    // Check if symbol exists
     if (!form.id) {
       const { data: existing } = await supabase.from('commodity_catalog').select('id').eq('symbol', formattedSymbol).single();
       if (existing) {
-        setError('هذا الرمز موجود مسبقاً');
         setSaving(false);
-        return;
+        const confirmUpdate = window.confirm('هذه السلعة موجودة مسبقًا، هل تريد تحديث بياناتها؟');
+        if (!confirmUpdate) {
+          return;
+        }
+        setSaving(true);
       }
     }
 
@@ -68,19 +71,21 @@ export default function CommodityCatalogTab() {
       updated_at: new Date().toISOString()
     };
 
-    let result;
-    if (form.id) {
-      result = await supabase.from('commodity_catalog').update(payload).eq('id', form.id);
-    } else {
-      result = await supabase.from('commodity_catalog').insert([{ ...payload, created_at: new Date().toISOString() }]);
-    }
+    const { error: resultError } = await supabase
+      .from('commodity_catalog')
+      .upsert(payload, { onConflict: 'symbol' });
 
-    if (result.error) {
-      console.error(result.error);
-      setError('حدث خطأ أثناء الحفظ');
+    if (resultError) {
+      console.error(resultError);
+      if (resultError.code === '23505') {
+        setError('السلعة موجودة مسبقًا، يمكنك تعديلها من القائمة.');
+      } else {
+        setError('حدث خطأ أثناء الحفظ');
+      }
     } else {
       setIsModalOpen(false);
       fetchCommodities();
+      alert('تم حفظ السلعة بنجاح');
     }
     setSaving(false);
   };

@@ -33,7 +33,10 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile=false --ignore-scripts
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: Build project
         run: pnpm run build
@@ -44,7 +47,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: './dist'
 
   deploy:
     environment:

@@ -113,31 +113,46 @@ export default function Prices() {
     e.preventDefault();
     if (!quickCommodityForm.symbol || !quickCommodityForm.name_ar || !quickCommodityForm.name_en || !quickCommodityForm.sector) return;
     setSavingQuick(true);
-    const sym = quickCommodityForm.symbol.toUpperCase();
+    const sym = quickCommodityForm.symbol.trim().toUpperCase();
     const { data: existing } = await supabase.from('commodity_catalog').select('id').eq('symbol', sym).single();
     if (existing) {
-      alert('هذا الرمز موجود مسبقاً');
       setSavingQuick(false);
-      return;
+      if (!window.confirm('هذه السلعة موجودة مسبقًا، هل تريد تحديث بياناتها واستخدامها؟')) {
+        return;
+      }
+      setSavingQuick(true);
     }
     const payload = {
       symbol: sym,
       name_ar: quickCommodityForm.name_ar,
       name_en: quickCommodityForm.name_en,
-      sector: quickCommodityForm.sector.toLowerCase(),
+      sector: quickCommodityForm.sector.trim().toLowerCase(),
       default_unit: quickCommodityForm.default_unit,
       is_active: true,
       updated_at: new Date().toISOString()
     };
-    const { data, error: err } = await supabase.from('commodity_catalog').insert([{ ...payload, created_at: new Date().toISOString() }]).select().single();
+    const { data, error: err } = await supabase.from('commodity_catalog').upsert(payload, { onConflict: 'symbol' }).select().single();
     if (err) {
       console.error(err);
-      alert('خطأ أثناء الحفظ');
+      if (err.code === '23505') {
+        alert('السلعة موجودة مسبقًا، يمكنك تعديلها من القائمة.');
+      } else {
+        alert('خطأ أثناء الحفظ');
+      }
     } else if (data) {
-      setCatalogCommodities([...catalogCommodities, data]);
+      // update list to include or update
+      const existingIdx = catalogCommodities.findIndex(c => c.symbol === sym);
+      if (existingIdx !== -1) {
+         const newCatalog = [...catalogCommodities];
+         newCatalog[existingIdx] = data;
+         setCatalogCommodities(newCatalog);
+      } else {
+         setCatalogCommodities([...catalogCommodities, data]);
+      }
       setForm({...form, symbol: sym, name_ar: payload.name_ar, name_en: payload.name_en, sector: payload.sector, unit: payload.default_unit});
       setIsQuickAddCommodityOpen(false);
       setQuickCommodityForm({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '' });
+      alert('تم حفظ السلعة بنجاح');
     }
     setSavingQuick(false);
   };
