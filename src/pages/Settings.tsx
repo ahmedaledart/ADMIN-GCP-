@@ -5,10 +5,11 @@ import { useAuthStore } from '../store/authStore';
 import { Save, Settings2, ShieldAlert, Package, CheckSquare } from 'lucide-react';
 import CommodityCatalogTab from './settings/CommodityCatalogTab';
 import UnitsCatalogTab from './settings/UnitsCatalogTab';
+import SectorsCatalogTab from './settings/SectorsCatalogTab';
 
 export default function Settings() {
   const { adminUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'general' | 'commodities' | 'units'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'sectors' | 'commodities' | 'units'>('general');
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,6 +102,15 @@ export default function Settings() {
         </button>
         {showAdvancedTabs && (
           <>
+            <button 
+              onClick={() => setActiveTab('sectors')}
+              className={`pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 transition ${
+                activeTab === 'sectors' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Package size={16} />
+              إدارة الأنواع
+            </button>
             <button 
               onClick={() => setActiveTab('commodities')}
               className={`pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 transition ${
@@ -256,6 +266,7 @@ export default function Settings() {
           </>
         )}
 
+        {showAdvancedTabs && activeTab === 'sectors' && <SectorsCatalogTab />}
         {showAdvancedTabs && activeTab === 'commodities' && <CommodityCatalogTab />}
         {showAdvancedTabs && activeTab === 'units' && <UnitsCatalogTab />}
       </div>

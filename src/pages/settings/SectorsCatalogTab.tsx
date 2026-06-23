@@ -1,41 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import type { CommodityCatalog, SectorCatalog } from '../../types';
+import type { SectorCatalog } from '../../types';
 import { useAuthStore } from '../../store/authStore';
-import { Plus, Edit2, Trash2, X, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, AlertCircle, ArrowUp, ArrowDown } from 'lucide-react';
 
-export default function CommodityCatalogTab() {
+export default function SectorsCatalogTab() {
   const { adminUser } = useAuthStore();
-  const [commodities, setCommodities] = useState<CommodityCatalog[]>([]);
   const [sectors, setSectors] = useState<SectorCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<Partial<CommodityCatalog>>({
-    symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '', is_active: true
+  const [form, setForm] = useState<Partial<SectorCatalog>>({
+    sector_code: '', name_ar: '', name_en: '', description: '', sort_order: 0, is_active: true
   });
 
   useEffect(() => {
-    fetchData();
+    fetchSectors();
   }, []);
 
-  const fetchData = async () => {
+  const fetchSectors = async () => {
     setLoading(true);
-    const [commoditiesData, sectorsData] = await Promise.all([
-      supabase.from('commodity_catalog').select('*').order('symbol'),
-      supabase.from('sectors_catalog').select('*').eq('is_active', true).order('sort_order')
-    ]);
-    if (commoditiesData.data) setCommodities(commoditiesData.data);
-    if (sectorsData.data) setSectors(sectorsData.data);
+    const { data } = await supabase.from('sectors_catalog').select('*').order('sort_order', { ascending: true });
+    if (data) setSectors(data);
     setLoading(false);
   };
 
-  const handleOpenModal = (item?: CommodityCatalog) => {
+  const handleOpenModal = (item?: SectorCatalog) => {
     if (item) {
       setForm(item);
     } else {
-      setForm({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '', is_active: true });
+      setForm({ sector_code: '', name_ar: '', name_en: '', description: '', sort_order: sectors.length * 10, is_active: true });
     }
     setError(null);
     setIsModalOpen(true);
@@ -43,60 +38,68 @@ export default function CommodityCatalogTab() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.symbol || !form.name_ar || !form.name_en || !form.sector || !form.default_unit) return;
+    if (!form.sector_code || !form.name_ar || !form.name_en) return;
 
-    const formattedSymbol = form.symbol.trim().toUpperCase();
-    const formattedSector = form.sector.trim().toLowerCase();
+    const formattedCode = form.sector_code.trim().toLowerCase().replace(/\s+/g, '');
 
     setSaving(true);
     setError(null);
 
-    // Check if symbol exists
+    // Ensure no spaces in code
+    if (formattedCode !== form.sector_code.trim().toLowerCase() && !/^[a-z0-9_]+$/.test(formattedCode)) {
+      setError('يجب ألا يحتوي كود القطاع على مسافات أو أحرف خاصة (مسموح: حروف إنجليزية، أرقام، _ )');
+      setSaving(false);
+      return;
+    }
+
+    // Check duplicate code
     if (!form.id) {
-      const { data: existing } = await supabase.from('commodity_catalog').select('id').eq('symbol', formattedSymbol).single();
+      const { data: existing } = await supabase.from('sectors_catalog').select('id').eq('sector_code', formattedCode).single();
       if (existing) {
+        setError('كود القطاع موجود مسبقاً');
         setSaving(false);
-        const confirmUpdate = window.confirm('هذه السلعة موجودة مسبقًا، هل تريد تحديث بياناتها؟');
-        if (!confirmUpdate) {
-          return;
-        }
-        setSaving(true);
+        return;
       }
     }
 
     const payload = {
-      symbol: formattedSymbol,
+      sector_code: formattedCode,
       name_ar: form.name_ar,
       name_en: form.name_en,
-      sector: formattedSector,
-      default_unit: form.default_unit,
+      description: form.description || '',
+      sort_order: Number(form.sort_order || 0),
       is_active: form.is_active,
       updated_at: new Date().toISOString()
     };
 
-    const { error: resultError } = await supabase
-      .from('commodity_catalog')
-      .upsert(payload, { onConflict: 'symbol' });
+    let resultError;
+
+    if (form.id) {
+      const { error: updateError } = await supabase.from('sectors_catalog').update(payload).eq('id', form.id);
+      resultError = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('sectors_catalog').insert([{ ...payload, created_at: new Date().toISOString() }]);
+      resultError = insertError;
+    }
 
     if (resultError) {
       console.error(resultError);
       if (resultError.code === '23505') {
-        setError('السلعة موجودة مسبقًا، يمكنك تعديلها من القائمة.');
+        setError('كود القطاع موجود مسبقًا.');
       } else {
         setError('حدث خطأ أثناء الحفظ');
       }
     } else {
       setIsModalOpen(false);
-      fetchData();
-      alert('تم حفظ السلعة بنجاح');
+      fetchSectors();
     }
     setSaving(false);
   };
 
-  const toggleStatus = async (item: CommodityCatalog) => {
-    const { error } = await supabase.from('commodity_catalog').update({ is_active: !item.is_active, updated_at: new Date().toISOString() }).eq('id', item.id);
+  const toggleStatus = async (item: SectorCatalog) => {
+    const { error } = await supabase.from('sectors_catalog').update({ is_active: !item.is_active, updated_at: new Date().toISOString() }).eq('id', item.id);
     if (!error) {
-      setCommodities(commodities.map(c => c.id === item.id ? { ...c, is_active: !item.is_active } : c));
+      setSectors(sectors.map(c => c.id === item.id ? { ...c, is_active: !item.is_active } : c));
     }
   };
 
@@ -105,9 +108,13 @@ export default function CommodityCatalogTab() {
       alert("لا يمكن الحذف إلا للأدمن الرئيسي. يرجى استخدام التعطيل بدلاً من ذلك.");
       return;
     }
-    if (window.confirm('هل أنت متأكد من الحذف النهائي لهذه السلعة؟')) {
-      await supabase.from('commodity_catalog').delete().eq('id', id);
-      setCommodities(commodities.filter(c => c.id !== id));
+    if (window.confirm('يفضل تعطيل النوع بدل حذفه حتى لا تتأثر السلع المرتبطة به.\n\nهل أنت متأكد من الحذف النهائي لهذا القطاع؟')) {
+      const { error } = await supabase.from('sectors_catalog').delete().eq('id', id);
+      if (error) {
+        alert('حدث خطأ أثناء الحذف، قد يكون مرتبطاً ببيانات أخرى.');
+      } else {
+        setSectors(sectors.filter(c => c.id !== id));
+      }
     }
   };
 
@@ -116,10 +123,10 @@ export default function CommodityCatalogTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">إدارة السلع المرجعية</h2>
+        <h2 className="text-xl font-bold text-slate-800">إدارة أنواع السلع (القطاعات)</h2>
         <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
           <Plus size={18} />
-          إضافة سلعة
+          إضافة قطاع
         </button>
       </div>
 
@@ -127,21 +134,21 @@ export default function CommodityCatalogTab() {
         <table className="w-full text-sm text-right">
           <thead className="bg-slate-50 text-slate-600 border-b">
             <tr>
-              <th className="px-4 py-3 font-medium">الرمز</th>
-              <th className="px-4 py-3 font-medium">الاسم</th>
-              <th className="px-4 py-3 font-medium">القطاع</th>
-              <th className="px-4 py-3 font-medium">الوحدة الافتراضية</th>
+              <th className="px-4 py-3 font-medium w-16">الترتيب</th>
+              <th className="px-4 py-3 font-medium">كود القطاع</th>
+              <th className="px-4 py-3 font-medium">الاسم بالعربية</th>
+              <th className="px-4 py-3 font-medium">الاسم بالإنجليزية</th>
               <th className="px-4 py-3 font-medium">الحالة</th>
               <th className="px-4 py-3 w-32 font-medium">إجراءات</th>
             </tr>
           </thead>
           <tbody className="divide-y text-slate-700">
-            {commodities.map(item => (
+            {sectors.map(item => (
               <tr key={item.id} className={!item.is_active ? 'opacity-50' : ''}>
-                <td className="px-4 py-3 font-semibold uppercase">{item.symbol}</td>
-                <td className="px-4 py-3">{item.name_ar} - {item.name_en}</td>
-                <td className="px-4 py-3 capitalize">{item.sector}</td>
-                <td className="px-4 py-3">{item.default_unit}</td>
+                <td className="px-4 py-3 text-center">{item.sort_order}</td>
+                <td className="px-4 py-3 font-mono text-xs">{item.sector_code}</td>
+                <td className="px-4 py-3 font-semibold">{item.name_ar}</td>
+                <td className="px-4 py-3">{item.name_en}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleStatus(item)} className={`px-2 py-1 text-xs rounded-full ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {item.is_active ? 'مفعل' : 'معطل'}
@@ -161,9 +168,9 @@ export default function CommodityCatalogTab() {
                 </td>
               </tr>
             ))}
-            {commodities.length === 0 && (
+            {sectors.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">لا توجد سلع مضافة</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">لا توجد قطاعات مضافة</td>
               </tr>
             )}
           </tbody>
@@ -174,7 +181,7 @@ export default function CommodityCatalogTab() {
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">{form.id ? 'تعديل السلعة' : 'إضافة سلعة جديدة'}</h3>
+              <h3 className="font-bold text-lg text-slate-800">{form.id ? 'تعديل قطاع' : 'إضافة قطاع جديد'}</h3>
               <button disabled={saving} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
@@ -190,33 +197,31 @@ export default function CommodityCatalogTab() {
                 )}
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الرمز (Symbol) *</label>
-                    <input required type="text" value={form.symbol} onChange={e => setForm({...form, symbol: e.target.value.toUpperCase()})} className="w-full border rounded-lg px-3 py-2 uppercase" placeholder="BRENTOIL" />
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الكود (مثال: metals) *</label>
+                    <input required type="text" value={form.sector_code} onChange={e => setForm({...form, sector_code: e.target.value.toLowerCase().replace(/\s+/g, '')})} className="w-full border rounded-lg px-3 py-2 bg-slate-50 font-mono text-sm" placeholder="metals" disabled={!!form.id} />
+                    {form.id && <p className="text-xs text-slate-500 mt-1">لا يمكن تغيير الكود بعد الإنشاء</p>}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة الافتراضية *</label>
-                    <input required type="text" value={form.default_unit} onChange={e => setForm({...form, default_unit: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="برميل" />
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">الترتيب (Sort Order) *</label>
+                    <input required type="number" value={form.sort_order} onChange={e => setForm({...form, sort_order: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
-                    <input required type="text" value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                    <input required type="text" value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="المعادن" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
-                    <input required type="text" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                    <input required type="text" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="Metals" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">القطاع (Sector) *</label>
-                  <select required value={form.sector} onChange={e => setForm({...form, sector: e.target.value})} className="w-full border rounded-lg px-3 py-2">
-                    <option value="">اختر القطاع...</option>
-                    {sectors.map(sec => <option key={sec.sector_code} value={sec.sector_code}>{sec.name_ar} - {sec.sector_code}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">الوصف</label>
+                  <textarea rows={2} value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="w-full border rounded-lg px-3 py-2 resize-none" placeholder="وصف القطاع (اختياري)"></textarea>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">

@@ -1,22 +1,21 @@
 import { useState, useEffect, FormEvent, useRef, ChangeEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Commodity, CommodityCatalog, UnitsCatalog } from '../types';
+import type { Commodity, CommodityCatalog, UnitsCatalog, SectorCatalog } from '../types';
 import { useAuthStore } from '../store/authStore';
 import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare } from 'lucide-react';
 import Papa from 'papaparse';
-
-const ALLOWED_SECTORS = ['energy', 'metals', 'commodities', 'forex', 'indices', 'shipping'];
 
 export default function Prices() {
   const { adminUser } = useAuthStore();
   const [commodities, setCommodities] = useState<Commodity[]>([]);
   const [catalogCommodities, setCatalogCommodities] = useState<CommodityCatalog[]>([]);
+  const [catalogSectors, setCatalogSectors] = useState<SectorCatalog[]>([]);
   const [catalogUnits, setCatalogUnits] = useState<UnitsCatalog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const [isQuickAddCommodityOpen, setIsQuickAddCommodityOpen] = useState(false);
-  const [quickCommodityForm, setQuickCommodityForm] = useState({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '' });
+  const [quickCommodityForm, setQuickCommodityForm] = useState({ symbol: '', name_ar: '', name_en: '', sector: '', default_unit: '' });
   
   const [isQuickAddUnitOpen, setIsQuickAddUnitOpen] = useState(false);
   const [quickUnitForm, setQuickUnitForm] = useState({ unit_code: '', unit_ar: '', unit_en: '' });
@@ -53,10 +52,11 @@ export default function Prices() {
     try {
       setLoading(true);
       setError(null);
-      const [commsRes, catCommsRes, catUnitsRes] = await Promise.all([
+      const [commsRes, catCommsRes, catUnitsRes, catSectorsRes] = await Promise.all([
         supabase.from('commodities').select('*').order('sector').order('symbol').limit(50),
         supabase.from('commodity_catalog').select('*').eq('is_active', true),
-        supabase.from('units_catalog').select('*').eq('is_active', true)
+        supabase.from('units_catalog').select('*').eq('is_active', true),
+        supabase.from('sectors_catalog').select('*').eq('is_active', true).order('sort_order', { ascending: true })
       ]);
         
       if (commsRes.error) throw commsRes.error;
@@ -64,6 +64,7 @@ export default function Prices() {
       setCommodities(commsRes.data || []);
       setCatalogCommodities(catCommsRes.data || []);
       setCatalogUnits(catUnitsRes.data || []);
+      setCatalogSectors(catSectorsRes.data || []);
     } catch (err: any) {
       console.error(err);
       setError('حدث خطأ في جلب بيانات الأسعار');
@@ -151,7 +152,7 @@ export default function Prices() {
       }
       setForm({...form, symbol: sym, name_ar: payload.name_ar, name_en: payload.name_en, sector: payload.sector, unit: payload.default_unit});
       setIsQuickAddCommodityOpen(false);
-      setQuickCommodityForm({ symbol: '', name_ar: '', name_en: '', sector: 'energy', default_unit: '' });
+      setQuickCommodityForm({ symbol: '', name_ar: '', name_en: '', sector: '', default_unit: '' });
       alert('تم حفظ السلعة بنجاح');
     }
     setSavingQuick(false);
@@ -481,9 +482,40 @@ export default function Prices() {
         const existing = existingMap.get(symbol);
         
         // Default from catalog
+        // Handle Sector validation
+        let sectorCode = catalogCommodity?.sector || row.sector || existing?.sector || 'commodities';
+        sectorCode = sectorCode.toLowerCase().replace(/\s+/g, '');
+
+        let sectorExists = catalogSectors.find(s => s.sector_code === sectorCode);
+        
+        if (!sectorExists) {
+          if (isSuperAdmin) {
+            // Auto add sector
+            await supabase.from('sectors_catalog').insert([{
+              sector_code: sectorCode,
+              name_ar: sectorCode,
+              name_en: sectorCode,
+              is_active: true,
+              sort_order: catalogSectors.length * 10,
+              created_at: now,
+              updated_at: now
+            }]);
+            const newSector = { sector_code: sectorCode, name_ar: sectorCode, name_en: sectorCode, is_active: true, sort_order: catalogSectors.length * 10 } as any;
+            catalogSectors.push(newSector);
+          } else {
+            warnings.push(`نوع السلعة غير موجود في قائمة الأنواع (${sectorCode}) للرمز ${symbol}. تم التخطي.`);
+            continue; // Skip
+          }
+        } else if (!sectorExists.is_active) {
+          if (!isSuperAdmin) {
+            warnings.push(`نوع السلعة (${sectorCode}) غير مفعل للرمز ${symbol}. تم التخطي.`);
+            continue;
+          }
+        }
+
         const nameAr = catalogCommodity?.name_ar || row.name_ar || existing?.name_ar || symbol;
         const nameEn = catalogCommodity?.name_en || row.name_en || existing?.name_en || symbol;
-        const sector = catalogCommodity?.sector || row.sector || existing?.sector || 'commodities';
+        const sector = sectorCode;
 
         if (existing) {
            let previous_price = existing.price;
@@ -624,7 +656,7 @@ export default function Prices() {
               className="pl-3 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none appearance-none bg-white min-w-40"
             >
               <option value="all">كل القطاعات</option>
-              {ALLOWED_SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
+              {catalogSectors.map(s => <option key={s.sector_code} value={s.sector_code}>{s.name_ar}</option>)}
             </select>
           </div>
         </div>
@@ -983,7 +1015,8 @@ export default function Prices() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
                   <select required value={quickCommodityForm.sector} onChange={e => setQuickCommodityForm({...quickCommodityForm, sector: e.target.value})} className="w-full border rounded-lg px-3 py-2 bg-white">
-                    {ALLOWED_SECTORS.map(sec => <option key={sec} value={sec}>{sec}</option>)}
+                    <option value="">-- اختر القطاع --</option>
+                    {catalogSectors.map(sec => <option key={sec.sector_code} value={sec.sector_code}>{sec.name_ar} - {sec.sector_code}</option>)}
                   </select>
                 </div>
                 <div className="pt-4 flex justify-end gap-3">
