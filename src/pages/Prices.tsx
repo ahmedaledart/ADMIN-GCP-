@@ -251,86 +251,79 @@ export default function Prices() {
           alert('تم حفظ السعر بنجاح');
         } else {
           // Add mode
-          const { data: existing } = await supabase
+          const { data: existing, error: checkError } = await supabase
             .from('commodities')
-            .select('symbol, price, name_ar, name_en, sector, unit, previous_price, change_value, change_percent, trend')
+            .select('symbol, price')
             .eq('symbol', symbol)
             .maybeSingle();
 
-          if (existing) {
-            const newPrice = Number(form.price);
-            const oldPrice = existing.price;
-            
-            let previous_price = oldPrice;
-            let change_value = null;
-            let change_percent = null;
-            let trend: 'up' | 'down' | 'neutral' = 'neutral';
-            
-            if (newPrice !== oldPrice) {
-              change_value = newPrice - oldPrice;
-              change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
-              trend = newPrice > oldPrice ? 'up' : 'down';
-            } else {
-              previous_price = existing.previous_price || previous_price;
-              change_value = existing.change_value;
-              change_percent = existing.change_percent;
-              trend = existing.trend;
-            }
+          if (checkError) {
+             console.error('Check Error:', checkError);
+             alert(`خطأ في التحقق من السلعة: ${checkError.message}`);
+             setSaving(false);
+             return;
+          }
 
-            const updateData = {
+          if (existing) {
+            const oldPrice = Number(existing.price || 0);
+            const newPrice = Number(form.price);
+            const changeValue = newPrice - oldPrice;
+            const changePercent = oldPrice !== 0 ? Number(((changeValue / oldPrice) * 100).toFixed(2)) : 0;
+            const trend = newPrice > oldPrice ? 'up' : newPrice < oldPrice ? 'down' : 'neutral';
+
+            const { error: err } = await supabase
+              .from('commodities')
+              .update({
+                previous_price: oldPrice,
+                price: newPrice,
+                change_value: changeValue,
+                change_percent: changePercent,
+                trend,
+                unit: form.unit || null,
+                source: form.source || null,
+                status: form.status,
+                is_visible: form.is_visible,
+                last_update_method: 'admin',
+                updated_by: adminUser?.email || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('symbol', symbol);
+              
+            if (err) {
+              console.error(err);
+              alert(err.message);
+              setSaving(false);
+              return;
+            } else {
+              alert('تم حفظ السعر بنجاح');
+            }
+          } else {
+            const newPrice = Number(form.price);
+
+            const { error: err } = await supabase.from('commodities').insert({
+              symbol,
               name_ar: form.name_ar,
               name_en: form.name_en,
               sector: form.sector,
               price: newPrice,
+              previous_price: newPrice,
+              change_value: 0,
+              change_percent: 0,
+              trend: 'neutral',
               unit: form.unit || null,
               source: form.source || null,
-              previous_price,
-              change_value,
-              change_percent,
-              trend,
               status: form.status,
               is_visible: form.is_visible,
               last_update_method: 'admin',
               updated_by: adminUser?.email || null,
               updated_at: new Date().toISOString()
-            };
+            });
 
-            const { error: err } = await supabase
-              .from('commodities')
-              .update(updateData)
-              .eq('symbol', symbol);
-              
             if (err) {
-              if (err.code === '23505') {
-                 alert('هذه السلعة موجودة مسبقًا وتم تحويل العملية إلى تحديث السعر.');
-              } else {
-                 throw err;
-              }
-            } else {
-              alert('تم حفظ السعر بنجاح');
-            }
-          } else {
-            const { id, created_at, ...cleanForm } = form;
-            
-            const payload = {
-              ...cleanForm,
-              symbol,
-              change_value: 0,
-              change_percent: 0,
-              trend: 'neutral',
-              previous_price: form.price,
-              last_update_method: 'admin',
-              updated_by: adminUser?.email || null,
-              updated_at: new Date().toISOString()
-            };
-
-            const { error: err } = await supabase.from('commodities').insert([payload]);
-            if (err) {
-              if (err.code === '23505') {
-                 alert('هذه السلعة موجودة مسبقًا وتم تحويل العملية إلى تحديث السعر.');
-              } else {
-                 throw err;
-              }
+              console.error(err);
+              alert(err.message);
+              setSaving(false);
+              return;
             } else {
               alert('تم حفظ السعر بنجاح');
             }
@@ -346,7 +339,7 @@ export default function Prices() {
 
     } catch (err: any) {
       console.error(err);
-      alert('حدث خطأ أثناء الحفظ');
+      alert(err.message || 'حدث خطأ أثناء الحفظ');
     } finally {
       setSaving(false);
     }
