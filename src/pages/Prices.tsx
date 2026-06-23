@@ -199,86 +199,147 @@ export default function Prices() {
     
     try {
       setSaving(true);
-      const symbol = form.symbol?.toUpperCase();
+        const symbol = form.symbol?.trim().toUpperCase();
 
-      if (editingItem) {
-        // Edit mode
-        const newPrice = Number(form.price);
-        const oldPrice = editingItem.price;
-        
-        let previous_price = oldPrice;
-        let change_value = null;
-        let change_percent = null;
-        let trend: 'up' | 'down' | 'neutral' = 'neutral';
-        
-        if (newPrice !== oldPrice) {
-          change_value = newPrice - oldPrice;
-          change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
-          trend = newPrice > oldPrice ? 'up' : 'down';
-        } else {
-          previous_price = editingItem.previous_price || previous_price;
-          change_value = editingItem.change_value;
-          change_percent = editingItem.change_percent;
-          trend = editingItem.trend;
-        }
-        
-        const updateData = {
-          name_ar: form.name_ar,
-          name_en: form.name_en,
-          sector: form.sector,
-          price: newPrice,
-          unit: form.unit || null,
-          source: form.source || null,
-          previous_price,
-          change_value,
-          change_percent,
-          trend,
-          status: form.status,
-          is_visible: form.is_visible,
-          last_update_method: 'admin',
-          updated_by: adminUser?.email || null,
-          updated_at: new Date().toISOString()
-        };
-        
-        const { error: err } = await supabase
-          .from('commodities')
-          .update(updateData)
-          .eq('id', editingItem.id);
+        if (editingItem) {
+          // Edit mode
+          const newPrice = Number(form.price);
+          const oldPrice = editingItem.price;
           
-        if (err) throw err;
-        
-        setCommodities(prev => prev.map(c => c.id === editingItem.id ? { ...c, ...updateData } : c));
-      } else {
-        // Add mode
-        // Check duplicate
-        const { data: existing } = await supabase.from('commodities').select('id').eq('symbol', symbol).single();
-        if (existing) {
-          alert('هذا الرمز موجود مسبقاً');
-          setSaving(false);
-          return;
+          let previous_price = oldPrice;
+          let change_value = null;
+          let change_percent = null;
+          let trend: 'up' | 'down' | 'neutral' = 'neutral';
+          
+          if (newPrice !== oldPrice) {
+            change_value = newPrice - oldPrice;
+            change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
+            trend = newPrice > oldPrice ? 'up' : 'down';
+          } else {
+            previous_price = editingItem.previous_price || previous_price;
+            change_value = editingItem.change_value;
+            change_percent = editingItem.change_percent;
+            trend = editingItem.trend;
+          }
+          
+          const updateData = {
+            name_ar: form.name_ar,
+            name_en: form.name_en,
+            sector: form.sector,
+            price: newPrice,
+            unit: form.unit || null,
+            source: form.source || null,
+            previous_price,
+            change_value,
+            change_percent,
+            trend,
+            status: form.status,
+            is_visible: form.is_visible,
+            last_update_method: 'admin',
+            updated_by: adminUser?.email || null,
+            updated_at: new Date().toISOString()
+          };
+          
+          const { error: err } = await supabase
+            .from('commodities')
+            .update(updateData)
+            .eq('id', editingItem.id);
+            
+          if (err) throw err;
+          
+          fetchData();
+          alert('تم حفظ السعر بنجاح');
+        } else {
+          // Add mode
+          const { data: existing } = await supabase
+            .from('commodities')
+            .select('symbol, price, name_ar, name_en, sector, unit, previous_price, change_value, change_percent, trend')
+            .eq('symbol', symbol)
+            .maybeSingle();
+
+          if (existing) {
+            const newPrice = Number(form.price);
+            const oldPrice = existing.price;
+            
+            let previous_price = oldPrice;
+            let change_value = null;
+            let change_percent = null;
+            let trend: 'up' | 'down' | 'neutral' = 'neutral';
+            
+            if (newPrice !== oldPrice) {
+              change_value = newPrice - oldPrice;
+              change_percent = oldPrice ? (change_value / oldPrice) * 100 : 0;
+              trend = newPrice > oldPrice ? 'up' : 'down';
+            } else {
+              previous_price = existing.previous_price || previous_price;
+              change_value = existing.change_value;
+              change_percent = existing.change_percent;
+              trend = existing.trend;
+            }
+
+            const updateData = {
+              name_ar: form.name_ar,
+              name_en: form.name_en,
+              sector: form.sector,
+              price: newPrice,
+              unit: form.unit || null,
+              source: form.source || null,
+              previous_price,
+              change_value,
+              change_percent,
+              trend,
+              status: form.status,
+              is_visible: form.is_visible,
+              last_update_method: 'admin',
+              updated_by: adminUser?.email || null,
+              updated_at: new Date().toISOString()
+            };
+
+            const { error: err } = await supabase
+              .from('commodities')
+              .update(updateData)
+              .eq('symbol', symbol);
+              
+            if (err) {
+              if (err.code === '23505') {
+                 alert('هذه السلعة موجودة مسبقًا وتم تحويل العملية إلى تحديث السعر.');
+              } else {
+                 throw err;
+              }
+            } else {
+              alert('تم حفظ السعر بنجاح');
+            }
+          } else {
+            const { id, created_at, ...cleanForm } = form;
+            
+            const payload = {
+              ...cleanForm,
+              symbol,
+              change_value: 0,
+              change_percent: 0,
+              trend: 'neutral',
+              previous_price: form.price,
+              last_update_method: 'admin',
+              updated_by: adminUser?.email || null,
+              updated_at: new Date().toISOString()
+            };
+
+            const { error: err } = await supabase.from('commodities').insert([payload]);
+            if (err) {
+              if (err.code === '23505') {
+                 alert('هذه السلعة موجودة مسبقًا وتم تحويل العملية إلى تحديث السعر.');
+              } else {
+                 throw err;
+              }
+            } else {
+              alert('تم حفظ السعر بنجاح');
+            }
+          }
+          
+          fetchData();
         }
 
-        const { id, created_at, ...cleanForm } = form;
-        
-        const payload = {
-          ...cleanForm,
-          symbol,
-          change_value: 0,
-          change_percent: 0,
-          trend: 'neutral',
-          previous_price: form.price,
-          last_update_method: 'admin',
-          updated_by: adminUser?.email || null,
-          updated_at: new Date().toISOString()
-        };
-
-        const { error: err } = await supabase.from('commodities').insert([payload]);
-        if (err) throw err;
-        
-        fetchCommodities();
-      }
-
-      setIsModalOpen(false);
+        setIsModalOpen(false);
       setForm({
         symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
       });
@@ -888,7 +949,7 @@ export default function Prices() {
                 disabled={saving || !form.symbol} 
                 className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50"
               >
-                {saving ? 'جاري الحفظ...' : (editingItem ? 'حفظ التعديلات' : 'إضافة')}
+                {saving ? 'جاري الحفظ...' : (editingItem ? 'تحديث السعر' : (commodities.find(c => c.symbol === form.symbol?.trim().toUpperCase()) ? 'تحديث السعر' : 'إضافة السعر'))}
               </button>
             </div>
           </div>
