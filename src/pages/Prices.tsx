@@ -34,9 +34,10 @@ export default function Prices() {
   const [editingItem, setEditingItem] = useState<Commodity | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<Commodity>>({
-    symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
+    symbol: '', name_ar: '', name_en: '', sector: '', price: 0, unit: '', source: '', status: 'active', is_visible: true
   });
   const [saving, setSaving] = useState(false);
+  const [searchCommodity, setSearchCommodity] = useState('');
 
   // Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,14 +76,16 @@ export default function Prices() {
 
   const openAddModal = () => {
     setEditingItem(null);
+    setSearchCommodity('');
     setForm({
-      symbol: '', name_ar: '', name_en: '', sector: 'energy', price: 0, unit: '', source: '', status: 'active', is_visible: true
+      symbol: '', name_ar: '', name_en: '', sector: '', price: 0, unit: '', source: '', status: 'active', is_visible: true
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (item: Commodity) => {
     setEditingItem(item);
+    setSearchCommodity('');
     setForm({ ...item });
     setIsModalOpen(true);
   };
@@ -847,55 +850,107 @@ export default function Prices() {
             
             <div className="p-4 overflow-y-auto flex-1">
               <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">السلعة *</label>
-                    <div className="flex gap-2">
-                      <select 
-                        required
-                        disabled={!!editingItem}
-                        value={form.symbol} 
-                        onChange={e => {
-                          const val = e.target.value;
-                          setForm({...form, symbol: val});
-                          if (!editingItem) {
-                            const found = catalogCommodities.find(c => c.symbol === val);
-                            if (found) {
-                              setForm(prev => ({
-                                ...prev,
-                                symbol: val,
-                                name_ar: found.name_ar,
-                                name_en: found.name_en,
-                                sector: found.sector,
-                                unit: found.default_unit
-                              }));
-                            }
-                          }
-                        }}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none uppercase bg-white disabled:bg-slate-100 disabled:text-slate-500"
-                      >
-                        <option value="">-- اختر السلعة --</option>
-                        {catalogCommodities.map(c => (
-                          <option key={c.id} value={c.symbol}>{c.symbol} - {c.name_ar} ({c.sector})</option>
-                        ))}
-                        {editingItem && !catalogCommodities.find(c => c.symbol === editingItem.symbol) && (
-                          <option value={editingItem.symbol}>{editingItem.symbol}</option>
-                        )}
+                {editingItem ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
+                      <select disabled value={form.sector} className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none">
+                        <option value={form.sector}>{catalogSectors.find(s => s.sector_code === form.sector)?.name_ar || form.sector}</option>
                       </select>
                     </div>
-                    {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        هل السلعة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddCommodityOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
-                      </p>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">السلعة *</label>
+                      <input type="text" readOnly disabled value={form.symbol} className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none uppercase" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* 1. Sector */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
+                      <select
+                        required
+                        value={form.sector || ''}
+                        onChange={e => {
+                          setForm({ ...form, sector: e.target.value, symbol: '', name_ar: '', name_en: '', unit: '' });
+                          setSearchCommodity('');
+                        }}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white"
+                      >
+                        <option value="">-- اختر القطاع --</option>
+                        {catalogSectors.map(s => (
+                          <option key={s.sector_code} value={s.sector_code}>{s.name_ar} - {s.sector_code}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* 2 & 3. Commodity Search and Selection */}
+                    {!form.sector ? (
+                      <div className="p-3 bg-blue-50 border border-blue-100 text-blue-700 text-sm rounded-lg">
+                        يرجى اختيار القطاع أولًا لعرض السلع
+                      </div>
+                    ) : catalogCommodities.filter(c => c.sector === form.sector).length === 0 ? (
+                      <div className="p-3 bg-orange-50 border border-orange-100 text-orange-700 text-sm rounded-lg">
+                        لا توجد سلع مضافة لهذا القطاع
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
+                         <div>
+                           <label className="block text-sm font-medium text-slate-700 mb-1">البحث عن السلعة</label>
+                           <input 
+                             type="text" 
+                             placeholder="ابحث بالرمز أو الاسم..." 
+                             value={searchCommodity} 
+                             onChange={e => setSearchCommodity(e.target.value)} 
+                             className="w-full border rounded-lg px-3 py-2 bg-white outline-none focus:ring-primary-500" 
+                           />
+                         </div>
+                         
+                         {(() => {
+                           const searchLower = searchCommodity.toLowerCase();
+                           const filtered = catalogCommodities.filter(c => 
+                             c.sector === form.sector && 
+                             (c.symbol.toLowerCase().includes(searchLower) || c.name_ar.toLowerCase().includes(searchLower) || c.name_en.toLowerCase().includes(searchLower))
+                           );
+                           if (filtered.length === 0) {
+                              return <div className="p-2 text-sm text-slate-500 font-medium">لا توجد سلعة مطابقة للبحث</div>
+                           }
+                           return (
+                             <div>
+                               <label className="block text-sm font-medium text-slate-700 mb-1">اختر السلعة *</label>
+                               <select 
+                                 required
+                                 value={form.symbol} 
+                                 onChange={e => {
+                                   const val = e.target.value;
+                                   const found = catalogCommodities.find(c => c.symbol === val);
+                                   if (found) {
+                                     setForm(prev => ({ ...prev, symbol: val, name_ar: found.name_ar, name_en: found.name_en, unit: found.default_unit }));
+                                   } else {
+                                     setForm(prev => ({ ...prev, symbol: val }));
+                                   }
+                                 }}
+                                 size={Math.min(filtered.length + 1, 5)}
+                                 className="w-full border rounded-lg p-2 focus:ring-primary-500 outline-none uppercase bg-white cursor-pointer"
+                               >
+                                  <option value="" disabled className="text-slate-400">=== انقر لاختيار السلعة ===</option>
+                                  {filtered.map(c => (
+                                    <option key={c.id} value={c.symbol} className="p-2 hover:bg-slate-100">{c.symbol} - {c.name_ar} - {c.name_en}</option>
+                                  ))}
+                               </select>
+                             </div>
+                           );
+                         })()}
+
+                         {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && (
+                           <p className="text-xs text-slate-500 pt-1">
+                             هل السلعة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddCommodityOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
+                           </p>
+                         )}
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                    <input type="text" readOnly disabled
-                      value={form.sector} 
-                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
-                  </div>
-                </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
