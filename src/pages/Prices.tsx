@@ -2,8 +2,9 @@ import { useState, useEffect, FormEvent, useRef, ChangeEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Commodity, CommodityCatalog, UnitsCatalog, SectorCatalog } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare } from 'lucide-react';
+import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare, Download } from 'lucide-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 export default function Prices() {
   const { adminUser } = useAuthStore();
@@ -28,6 +29,13 @@ export default function Prices() {
   // Search & Filter
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState<string>('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const ITEMS_PER_PAGE = 50;
   
   // Edit & Add State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,14 +55,38 @@ export default function Prices() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, sectorFilter, fromDate, toDate, search]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      let query = supabase.from('commodities').select('*', { count: 'exact' });
+      
+      if (sectorFilter !== 'all') {
+        query = query.eq('sector', sectorFilter);
+      }
+      if (search) {
+        query = query.or(`symbol.ilike.%${search}%,name_ar.ilike.%${search}%,name_en.ilike.%${search}%`);
+      }
+      if (fromDate) {
+        query = query.gte('updated_at', new Date(fromDate).toISOString());
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        query = query.lte('updated_at', to.toISOString());
+      }
+      
+      query = query.order('updated_at', { ascending: false });
+      
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
+
       const [commsRes, catCommsRes, catUnitsRes, catSectorsRes] = await Promise.all([
-        supabase.from('commodities').select('*').order('sector').order('symbol').limit(50),
+        query,
         supabase.from('commodity_catalog').select('*').eq('is_active', true),
         supabase.from('units_catalog').select('*').eq('is_active', true),
         supabase.from('sectors_catalog').select('*').eq('is_active', true).order('sort_order', { ascending: true })
@@ -63,6 +95,9 @@ export default function Prices() {
       if (commsRes.error) throw commsRes.error;
       
       setCommodities(commsRes.data || []);
+      if (commsRes.count !== null) {
+        setTotalPages(Math.ceil(commsRes.count / ITEMS_PER_PAGE));
+      }
       setCatalogCommodities(catCommsRes.data || []);
       setCatalogUnits(catUnitsRes.data || []);
       setCatalogSectors(catSectorsRes.data || []);
@@ -603,13 +638,82 @@ export default function Prices() {
     }
   };
 
-  const filtered = commodities.filter(c => {
-    const matchesSearch = c.symbol.toLowerCase().includes(search.toLowerCase()) || 
-                          c.name_ar.includes(search) || 
-                          (c.name_en && c.name_en.toLowerCase().includes(search.toLowerCase()));
-    const matchesSector = sectorFilter === 'all' || c.sector === sectorFilter;
-    return matchesSearch && matchesSector;
-  });
+  const exportExcel = async () => {
+    if (!adminUser?.can_manage_prices && !adminUser?.can_view_reports && adminUser?.role !== 'super_admin') {
+      alert("ليس لديك صلاحية التصدير");
+      return;
+    }
+    
+    if (!fromDate && !toDate && sectorFilter === 'all') {
+      if (!window.confirm('أنت على وشك تصدير كمية كبيرة من البيانات، هل تريد الاستمرار؟\nيفضل تحديد تاريخ أو قطاع قبل التصدير.')) {
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      let query = supabase.from('commodities').select('*');
+      
+      if (sectorFilter !== 'all') query = query.eq('sector', sectorFilter);
+      if (fromDate) query = query.gte('updated_at', new Date(fromDate).toISOString());
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        query = query.lte('updated_at', to.toISOString());
+      }
+      
+      query = query.order('updated_at', { ascending: false });
+      
+      const { data, error: err } = await query;
+      if (err) throw err;
+      if (!data || data.length === 0) {
+        alert('لا توجد بيانات للتصدير');
+        return;
+      }
+      
+      const rows = data.map(r => ({
+        symbol: r.symbol,
+        name_ar: r.name_ar,
+        name_en: r.name_en,
+        sector: r.sector,
+        price: r.price,
+        previous_price: r.previous_price,
+        change_value: r.change_value,
+        change_percent: r.change_percent,
+        trend: r.trend,
+        high: r.high || null,
+        low: r.low || null,
+        unit: r.unit,
+        source: r.source,
+        status: r.status,
+        is_visible: r.is_visible,
+        updated_at: new Date(r.updated_at).toLocaleString('en-US', { hour12: false })
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Prices');
+      
+      let fileName = 'prices';
+      if (sectorFilter !== 'all') fileName += `_${sectorFilter}`;
+      else fileName += '_all';
+      
+      if (fromDate || toDate) {
+         fileName += `_${fromDate || 'start'}_to_${toDate || 'now'}`;
+      } else {
+         const today = new Date().toISOString().split('T')[0];
+         fileName += `_${today}`;
+      }
+      fileName += '.xlsx';
+      
+      XLSX.writeFile(workbook, fileName);
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء التصدير');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const canImport = adminUser?.role === 'super_admin' || adminUser?.can_import_prices;
 
@@ -619,6 +723,13 @@ export default function Prices() {
         <h1 className="text-2xl font-bold text-slate-900">إدارة الأسعار</h1>
         
         <div className="flex gap-2">
+          <button 
+            onClick={exportExcel}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+          >
+            <Download size={18} />
+            تحميل Excel
+          </button>
           {canImport && (
             <button 
               onClick={() => setActiveTab(activeTab === 'list' ? 'import' : 'list')}
@@ -640,27 +751,35 @@ export default function Prices() {
 
       {activeTab === 'list' && (
       <>
-        <div className="flex gap-4 w-full sm:w-auto bg-white p-4 rounded-xl border">
-          <div className="relative flex-1 sm:w-64 max-w-sm">
+        <div className="flex flex-wrap gap-4 w-full bg-white p-4 rounded-xl border">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute right-3 top-2.5 text-slate-400" size={20} />
             <input 
               type="text" 
               placeholder="بحث بالرمز أو الاسم..." 
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
               className="w-full pl-3 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
             />
           </div>
-          <div className="relative">
-            <Filter className="absolute right-3 top-2.5 text-slate-400" size={20} />
+          <div className="relative flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-slate-500 mb-1">القطاع</label>
             <select 
               value={sectorFilter}
-              onChange={e => setSectorFilter(e.target.value)}
-              className="pl-3 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none appearance-none bg-white min-w-40"
+              onChange={e => { setSectorFilter(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm"
             >
               <option value="all">كل القطاعات</option>
               {catalogSectors.map(s => <option key={s.sector_code} value={s.sector_code}>{s.name_ar}</option>)}
             </select>
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-slate-500 mb-1">من تاريخ</label>
+            <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-medium text-slate-500 mb-1">إلى تاريخ</label>
+            <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
         </div>
 
@@ -685,7 +804,7 @@ export default function Prices() {
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
-                   {filtered.map(item => (
+                   {commodities.map(item => (
                        <tr key={item.id} className="hover:bg-slate-50/50">
                          <td className="px-4 py-3 font-medium font-mono text-slate-900" dir="ltr">{item.symbol}</td>
                          <td className="px-4 py-3 text-slate-800">{item.name_ar}</td>
@@ -737,10 +856,17 @@ export default function Prices() {
                      ))}
                  </tbody>
               </table>
-              {filtered.length === 0 && (
+              {commodities.length === 0 && (
                  <div className="p-8 text-center text-slate-500">لا يوجد بيانات مطابقة</div>
               )}
              </div>
+             {totalPages > 1 && (
+               <div className="p-4 border-t flex justify-center gap-2 bg-slate-50">
+                 <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-50 text-sm">السابق</button>
+                 <span className="px-3 py-1 text-sm text-slate-600">صفحة {page} من {totalPages}</span>
+                 <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-50 text-sm">التالي</button>
+               </div>
+             )}
           </div>
         )}
       </>

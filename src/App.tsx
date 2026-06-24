@@ -10,6 +10,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Prices from './pages/Prices';
+import PriceHistory from './pages/PriceHistory';
 import News from './pages/News';
 import Analysis from './pages/Analysis';
 import Messages from './pages/Messages';
@@ -67,6 +68,12 @@ export default function App() {
         <Route path="/prices" element={
           <ProtectedRoute requiredPermission="can_manage_prices">
             <Prices />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/history" element={
+          <ProtectedRoute requiredPermission="can_manage_prices">
+            <PriceHistory />
           </ProtectedRoute>
         } />
         

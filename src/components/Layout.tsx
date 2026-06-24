@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   X,
-  Users
+  Users,
+  History
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useState, ReactNode } from 'react';
@@ -24,6 +25,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigation = [
     { name: 'الرئيسية', href: '/dashboard', icon: LayoutDashboard, show: true },
     { name: 'الأسعار', href: '/prices', icon: Tag, show: adminUser?.role === 'super_admin' || adminUser?.can_manage_prices },
+    { name: 'أرشيف الأسعار', href: '/history', icon: History, show: adminUser?.role === 'super_admin' || adminUser?.can_manage_prices || adminUser?.can_view_reports },
     { name: 'الأخبار', href: '/news', icon: Newspaper, show: adminUser?.role === 'super_admin' || adminUser?.can_manage_news },
     { name: 'التحليلات', href: '/analysis', icon: BarChart2, show: adminUser?.role === 'super_admin' || adminUser?.can_manage_analysis },
     { name: 'الرسائل', href: '/messages', icon: MessageSquare, show: adminUser?.role === 'super_admin' || adminUser?.can_manage_messages },
