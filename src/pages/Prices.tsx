@@ -32,6 +32,13 @@ export default function Prices() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   
+  // Bulk Entry State
+  const [bulkSector, setBulkSector] = useState('');
+  const [bulkItems, setBulkItems] = useState<any[]>([]);
+  const [globalSource, setGlobalSource] = useState('Manual Entry');
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkResults, setBulkResults] = useState<{ success: number, ignored: number, failed: number, errors: string[] } | null>(null);
+
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -89,7 +96,7 @@ export default function Prices() {
         query,
         supabase.from('commodity_catalog').select('*').eq('is_active', true),
         supabase.from('units_catalog').select('*').eq('is_active', true),
-        supabase.from('sectors_catalog').select('*').eq('is_active', true).order('sort_order', { ascending: true })
+        supabase.from('sectors_catalog').select('*').eq('is_active', true).order('sort_order', { ascending: true }).order('name_ar', { ascending: true })
       ]);
         
       if (commsRes.error) throw commsRes.error;
@@ -222,6 +229,124 @@ export default function Prices() {
       setQuickUnitForm({ unit_code: '', unit_ar: '', unit_en: '' });
     }
     setSavingQuick(false);
+  };
+
+  const fetchBulkItems = async (sector: string) => {
+    setBulkSector(sector);
+    if (!sector) {
+      setBulkItems([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [catalogRes, currentPricesRes] = await Promise.all([
+        supabase.from('commodity_catalog').select('*').eq('sector', sector).eq('is_active', true).order('symbol'),
+        supabase.from('commodities').select('symbol, price, source, status, is_visible').eq('sector', sector)
+      ]);
+      
+      if (catalogRes.error) throw catalogRes.error;
+      
+      const currentPricesMap = new Map((currentPricesRes.data || []).map(p => [p.symbol, p]));
+      
+      const items = (catalogRes.data || []).map(cat => {
+        const curr = currentPricesMap.get(cat.symbol);
+        return {
+          symbol: cat.symbol,
+          name_ar: cat.name_ar,
+          name_en: cat.name_en,
+          unit: cat.default_unit,
+          current_price: curr ? curr.price : 0,
+          new_price: '',
+          source: curr?.source || globalSource,
+          status: curr ? curr.status : 'active',
+          is_visible: curr ? curr.is_visible : true,
+        };
+      });
+      
+      setBulkItems(items);
+      setBulkResults(null);
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء جلب البيانات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkSave = async () => {
+    if (!adminUser?.can_manage_prices && adminUser?.role !== 'super_admin') {
+      alert("ليس لديك صلاحية لتعديل/إضافة الأسعار");
+      return;
+    }
+    
+    const itemsToUpdate = bulkItems.filter(item => item.new_price !== '' && !isNaN(Number(item.new_price)));
+    
+    if (itemsToUpdate.length === 0) {
+      alert('لا توجد أسعار جديدة للحفظ');
+      return;
+    }
+    
+    if (!window.confirm(`هل أنت متأكد من حفظ ${itemsToUpdate.length} سعر؟`)) return;
+
+    setBulkSaving(true);
+    setBulkResults(null);
+    
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: string[] = [];
+    const now = new Date().toISOString();
+    
+    // We will do it sequentially to track exactly which ones failed without stopping others
+    for (const item of itemsToUpdate) {
+      try {
+        const current_price = Number(item.current_price);
+        const new_price = Number(item.new_price);
+        const change_value = new_price - current_price;
+        const change_percent = current_price !== 0 ? Number(((change_value / current_price) * 100).toFixed(2)) : 0;
+        const trend = new_price > current_price ? 'up' : new_price < current_price ? 'down' : 'neutral';
+        
+        const payload = {
+          symbol: item.symbol,
+          name_ar: item.name_ar,
+          name_en: item.name_en,
+          sector: bulkSector,
+          price: new_price,
+          previous_price: item.current_price > 0 ? item.current_price : new_price,
+          change_value: item.current_price > 0 ? change_value : 0,
+          change_percent: item.current_price > 0 ? change_percent : 0,
+          trend: item.current_price > 0 ? trend : 'neutral',
+          unit: item.unit || null,
+          source: item.source || null,
+          status: item.status,
+          is_visible: item.is_visible,
+          last_update_method: 'manual_bulk',
+          updated_by: adminUser?.email || null,
+          updated_at: now
+        };
+        
+        const { error } = await supabase.from('commodities').upsert([payload], { onConflict: 'symbol' });
+        
+        if (error) {
+          failedCount++;
+          errors.push(`فشل ${item.symbol}: ${error.message}`);
+        } else {
+          successCount++;
+        }
+      } catch (err: any) {
+        failedCount++;
+        errors.push(`فشل ${item.symbol}: ${err.message}`);
+      }
+    }
+    
+    setBulkResults({
+      success: successCount,
+      ignored: bulkItems.length - itemsToUpdate.length,
+      failed: failedCount,
+      errors
+    });
+    
+    setBulkSaving(false);
+    fetchData(); // Refresh list data
   };
 
   const handleSaveSubmit = async (e: FormEvent) => {
@@ -722,7 +847,7 @@ export default function Prices() {
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">إدارة الأسعار</h1>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={exportExcel}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
@@ -736,7 +861,7 @@ export default function Prices() {
               className="flex items-center gap-2 bg-white border text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 transition"
             >
               {activeTab === 'list' ? <Upload size={18} /> : <Search size={18} />}
-              {activeTab === 'list' ? 'استيراد CSV' : 'عودة للقائمة'}
+              {activeTab === 'list' ? 'استيراد CSV' : 'عودة'}
             </button>
           )}
           <button 
@@ -744,7 +869,7 @@ export default function Prices() {
             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
           >
             <Plus size={18} />
-            إضافة يدوياً
+            إضافة سعر يدويًا
           </button>
         </div>
       </div>
@@ -965,6 +1090,8 @@ export default function Prices() {
         </div>
       )}
 
+
+
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
@@ -975,8 +1102,8 @@ export default function Prices() {
             </div>
             
             <div className="p-4 overflow-y-auto flex-1">
-              <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
-                {editingItem ? (
+              {editingItem ? (
+                <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
@@ -989,19 +1116,94 @@ export default function Prices() {
                       <input type="text" readOnly disabled value={form.symbol} className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none uppercase" />
                     </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* 1. Sector */}
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                      <select
-                        required
-                        value={form.sector || ''}
-                        onChange={e => {
-                          setForm({ ...form, sector: e.target.value, symbol: '', name_ar: '', name_en: '', unit: '' });
-                          setSearchCommodity('');
-                        }}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white"
+                      <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربي *</label>
+                      <input type="text" readOnly disabled value={form.name_ar} 
+                        className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزي *</label>
+                      <input type="text" dir="ltr" readOnly disabled value={form.name_en} 
+                        className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">السعر الحالي *</label>
+                      <input type="number" step="0.0001" required value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})}
+                        className="w-full border rounded-lg px-3 py-2 font-mono focus:ring-primary-500 outline-none" dir="ltr" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة (Unit)</label>
+                      <select value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                        <option value="">-- اختياري --</option>
+                        {catalogUnits.map((u: UnitsCatalog) => (
+                          <option key={u.id} value={u.unit_code}>{u.unit_ar} ({u.unit_code})</option>
+                        ))}
+                        {form.unit && !catalogUnits.find((u: UnitsCatalog) => u.unit_code === form.unit) && (
+                          <option value={form.unit}>{form.unit}</option>
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
+                      <input type="text" value={form.source || ''} onChange={e => setForm({...form, source: e.target.value})}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="Bloomberg, OANDA..." />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">الحالة</label>
+                      <select value={form.status} onChange={e => setForm({...form, status: e.target.value as any})}
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                        <option value="active">نشط</option>
+                        <option value="suspended">معلق</option>
+                        <option value="closed">مغلق</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <input type="checkbox" id="add_visible" checked={form.is_visible} onChange={e => setForm({...form, is_visible: e.target.checked})}
+                        className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+                      <label htmlFor="add_visible" className="text-sm font-medium text-slate-700">تفعيل الظهور للزوار</label>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-6">
+                  {bulkResults && (
+                    <div className={`p-4 rounded-lg flex gap-3 ${bulkResults.failed > 0 ? 'bg-orange-50 border border-orange-200 text-orange-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
+                      {bulkResults.failed > 0 ? <AlertCircle className="mt-0.5 shrink-0" /> : <Check className="mt-0.5 shrink-0" />}
+                      <div>
+                        <h4 className="font-bold">نتيجة الحفظ</h4>
+                        <ul className="text-sm mt-1 list-disc list-inside">
+                          <li>تم تحديث بنجاح: {bulkResults.success} سلعة</li>
+                          <li>تم التجاهل (بدون سعر جديد): {bulkResults.ignored} سلعة</li>
+                          {bulkResults.failed > 0 && <li>فشل التحديث: {bulkResults.failed} سلعة</li>}
+                        </ul>
+                        {bulkResults.errors && bulkResults.errors.length > 0 && (
+                          <div className="mt-2 text-xs">
+                            <p className="font-bold mb-1">تفاصيل الأخطاء:</p>
+                            <ul className="list-disc list-inside text-red-600">
+                              {bulkResults.errors.map((err, i) => <li key={i}>{err}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">اختر القطاع للتحديث *</label>
+                      <select 
+                        value={bulkSector}
+                        onChange={e => fetchBulkItems(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
                       >
                         <option value="">-- اختر القطاع --</option>
                         {catalogSectors.map(s => (
@@ -1009,136 +1211,124 @@ export default function Prices() {
                         ))}
                       </select>
                     </div>
-
-                    {/* 2 & 3. Commodity Search and Selection */}
-                    {!form.sector ? (
-                      <div className="p-3 bg-blue-50 border border-blue-100 text-blue-700 text-sm rounded-lg">
-                        يرجى اختيار القطاع أولًا لعرض السلع
-                      </div>
-                    ) : catalogCommodities.filter(c => c.sector === form.sector).length === 0 ? (
-                      <div className="p-3 bg-orange-50 border border-orange-100 text-orange-700 text-sm rounded-lg">
-                        لا توجد سلع مضافة لهذا القطاع
-                      </div>
-                    ) : (
-                      <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-3">
-                         <div>
-                           <label className="block text-sm font-medium text-slate-700 mb-1">البحث عن السلعة</label>
-                           <input 
-                             type="text" 
-                             placeholder="ابحث بالرمز أو الاسم..." 
-                             value={searchCommodity} 
-                             onChange={e => setSearchCommodity(e.target.value)} 
-                             className="w-full border rounded-lg px-3 py-2 bg-white outline-none focus:ring-primary-500" 
-                           />
-                         </div>
-                         
-                         {(() => {
-                           const searchLower = searchCommodity.toLowerCase();
-                           const filtered = catalogCommodities.filter(c => 
-                             c.sector === form.sector && 
-                             (c.symbol.toLowerCase().includes(searchLower) || c.name_ar.toLowerCase().includes(searchLower) || c.name_en.toLowerCase().includes(searchLower))
-                           );
-                           if (filtered.length === 0) {
-                              return <div className="p-2 text-sm text-slate-500 font-medium">لا توجد سلعة مطابقة للبحث</div>
-                           }
-                           return (
-                             <div>
-                               <label className="block text-sm font-medium text-slate-700 mb-1">اختر السلعة *</label>
-                               <select 
-                                 required
-                                 value={form.symbol} 
-                                 onChange={e => {
-                                   const val = e.target.value;
-                                   const found = catalogCommodities.find(c => c.symbol === val);
-                                   if (found) {
-                                     setForm(prev => ({ ...prev, symbol: val, name_ar: found.name_ar, name_en: found.name_en, unit: found.default_unit }));
-                                   } else {
-                                     setForm(prev => ({ ...prev, symbol: val }));
-                                   }
-                                 }}
-                                 size={Math.min(filtered.length + 1, 5)}
-                                 className="w-full border rounded-lg p-2 focus:ring-primary-500 outline-none uppercase bg-white cursor-pointer"
-                               >
-                                  <option value="" disabled className="text-slate-400">=== انقر لاختيار السلعة ===</option>
-                                  {filtered.map(c => (
-                                    <option key={c.id} value={c.symbol} className="p-2 hover:bg-slate-100">{c.symbol} - {c.name_ar} - {c.name_en}</option>
-                                  ))}
-                               </select>
-                             </div>
-                           );
-                         })()}
-
-                         {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && (
-                           <p className="text-xs text-slate-500 pt-1">
-                             هل السلعة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddCommodityOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
-                           </p>
-                         )}
+                    {bulkItems.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">المصدر العام (يطبق على الكل)</label>
+                        <input 
+                          type="text" 
+                          value={globalSource}
+                          onChange={e => {
+                            setGlobalSource(e.target.value);
+                            setBulkItems(bulkItems.map(item => ({ ...item, source: e.target.value })));
+                          }}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                        />
                       </div>
                     )}
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربي *</label>
-                    <input type="text" readOnly disabled value={form.name_ar} 
-                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزي *</label>
-                    <input type="text" dir="ltr" readOnly disabled value={form.name_en} 
-                      className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
-                  </div>
-                </div>
+                  {bulkSector && bulkItems.length === 0 && !loading && (
+                    <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border">
+                      لا توجد سلع مسجلة في هذا القطاع.
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">السعر الحالي *</label>
-                    <input type="number" step="0.0001" required value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})}
-                      className="w-full border rounded-lg px-3 py-2 font-mono focus:ring-primary-500 outline-none" dir="ltr" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة (Unit)</label>
-                    <select value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
-                      <option value="">-- اختياري --</option>
-                      {catalogUnits.map((u: UnitsCatalog) => (
-                        <option key={u.id} value={u.unit_code}>{u.unit_ar} ({u.unit_code})</option>
-                      ))}
-                      {form.unit && !catalogUnits.find((u: UnitsCatalog) => u.unit_code === form.unit) && (
-                        <option value={form.unit}>{form.unit}</option>
-                      )}
-                    </select>
-                    {(adminUser?.role === 'super_admin' || adminUser?.can_manage_settings) && !editingItem && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        هل الوحدة غير موجودة؟ <button type="button" onClick={() => setIsQuickAddUnitOpen(true)} className="text-primary-600 hover:underline">أضفها سريعاً</button>
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
-                    <input type="text" value={form.source || ''} onChange={e => setForm({...form, source: e.target.value})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="Bloomberg, OANDA..." />
-                  </div>
+                  {bulkItems.length > 0 && (
+                    <div className="space-y-3 border rounded-xl p-3 bg-slate-50">
+                      <div className="flex flex-col md:flex-row gap-2 justify-between items-start md:items-center">
+                        <div className="relative w-full md:w-1/2">
+                          <Search className="absolute right-3 top-2.5 text-slate-400" size={18} />
+                          <input 
+                            type="text"
+                            placeholder="ابحث داخل القطاع بالرمز أو الاسم..."
+                            value={searchCommodity}
+                            onChange={e => setSearchCommodity(e.target.value)}
+                            className="w-full pl-3 pr-10 py-2 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setBulkItems(bulkItems.map(item => ({...item, new_price: ''})))}
+                            className="px-3 py-1.5 text-xs font-medium border bg-white text-slate-600 rounded hover:bg-slate-50 transition"
+                          >
+                            مسح الأسعار
+                          </button>
+                          <button 
+                            onClick={() => setBulkItems(bulkItems.map(item => ({...item, new_price: item.current_price > 0 ? item.current_price.toString() : ''})))}
+                            className="px-3 py-1.5 text-xs font-medium border bg-white text-slate-600 rounded hover:bg-slate-50 transition"
+                          >
+                            نسخ السعر الحالي
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="border bg-white rounded-lg overflow-x-auto max-h-[45vh]">
+                        <table className="w-full text-sm text-right">
+                          <thead className="bg-slate-100 text-slate-700 sticky top-0 border-b z-10">
+                            <tr>
+                              <th className="px-3 py-2 font-medium">الرمز</th>
+                              <th className="px-3 py-2 font-medium">الاسم</th>
+                              <th className="px-3 py-2 font-medium">الوحدة</th>
+                              <th className="px-3 py-2 font-medium text-center">السعر الحالي</th>
+                              <th className="px-3 py-2 font-medium min-w-[120px]">السعر الجديد</th>
+                              <th className="px-3 py-2 font-medium min-w-[100px]">المصدر</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {bulkItems.filter(item => {
+                               if (!searchCommodity) return true;
+                               const searchLower = searchCommodity.toLowerCase();
+                               return item.symbol.toLowerCase().includes(searchLower) || 
+                                      item.name_ar.includes(searchCommodity) || 
+                                      (item.name_en && item.name_en.toLowerCase().includes(searchLower));
+                            }).map((item) => {
+                               const originalIndex = bulkItems.findIndex(b => b.symbol === item.symbol);
+                               return (
+                                <tr key={item.symbol} className={`${item.new_price !== '' ? 'bg-primary-50/30' : 'hover:bg-slate-50'}`}>
+                                  <td className="px-3 py-2 font-mono font-medium text-xs" dir="ltr">{item.symbol}</td>
+                                  <td className="px-3 py-2 font-medium text-xs truncate max-w-[150px]" title={item.name_ar}>{item.name_ar}</td>
+                                  <td className="px-3 py-2 text-slate-500 text-xs">{item.unit || '-'}</td>
+                                  <td className="px-3 py-2 text-center font-mono text-slate-500 text-xs" dir="ltr">
+                                    {item.current_price > 0 ? item.current_price : '-'}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="number" 
+                                      step="any"
+                                      placeholder="سعر جديد..."
+                                      value={item.new_price}
+                                      onChange={(e) => {
+                                        const newItems = [...bulkItems];
+                                        newItems[originalIndex].new_price = e.target.value;
+                                        setBulkItems(newItems);
+                                      }}
+                                      className={`w-full px-2 py-1.5 text-xs border rounded outline-none font-mono focus:ring-2 focus:ring-primary-500 ${item.new_price !== '' ? 'bg-white border-primary-300' : 'bg-slate-50'}`}
+                                      dir="ltr"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input 
+                                      type="text" 
+                                      value={item.source || ''}
+                                      onChange={(e) => {
+                                        const newItems = [...bulkItems];
+                                        newItems[originalIndex].source = e.target.value;
+                                        setBulkItems(newItems);
+                                      }}
+                                      className="w-full px-2 py-1.5 text-xs border rounded outline-none focus:ring-1 focus:ring-primary-500"
+                                      placeholder="المصدر"
+                                    />
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الحالة</label>
-                    <select value={form.status} onChange={e => setForm({...form, status: e.target.value as any})}
-                      className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
-                      <option value="active">نشط</option>
-                      <option value="suspended">معلق</option>
-                      <option value="closed">مغلق</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center gap-2 pt-6">
-                    <input type="checkbox" id="add_visible" checked={form.is_visible} onChange={e => setForm({...form, is_visible: e.target.checked})}
-                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-                    <label htmlFor="add_visible" className="text-sm font-medium text-slate-700">تفعيل الظهور للزوار</label>
-                  </div>
-                </div>
-              </form>
+              )}
             </div>
             
             <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
@@ -1149,14 +1339,25 @@ export default function Prices() {
               >
                 إلغاء
               </button>
-              <button 
-                type="submit" 
-                form="add-commodity-form" 
-                disabled={saving || !form.symbol} 
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50"
-              >
-                {saving ? 'جاري الحفظ...' : (editingItem ? 'تحديث السعر' : (commodities.find(c => c.symbol === form.symbol?.trim().toUpperCase()) ? 'تحديث السعر' : 'إضافة السعر'))}
-              </button>
+              {editingItem ? (
+                <button 
+                  type="submit" 
+                  form="add-commodity-form" 
+                  disabled={saving || !form.symbol} 
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {saving ? 'جاري الحفظ...' : 'تحديث السعر'}
+                </button>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={handleBulkSave}
+                  disabled={bulkSaving || bulkItems.filter(i => i.new_price !== '').length === 0}
+                  className="px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-bold hover:bg-primary-700 disabled:opacity-50 transition"
+                >
+                  {bulkSaving ? 'جاري الحفظ...' : 'حفظ جميع الأسعار'}
+                </button>
+              )}
             </div>
           </div>
         </div>
