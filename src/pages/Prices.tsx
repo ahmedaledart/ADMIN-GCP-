@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent, useRef, ChangeEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Commodity, CommodityCatalog, UnitsCatalog, SectorCatalog } from '../types';
 import { useAuthStore } from '../store/authStore';
-import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare, Download } from 'lucide-react';
+import { Search, Edit2, Check, X, Filter, Plus, Upload, AlertCircle, FileText, Trash2, Package, CheckSquare, Download, Eye, EyeOff } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
@@ -59,6 +59,10 @@ export default function Prices() {
   const [importData, setImportData] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{added: number, updated: number, failed: number, warnings: string[]} | null>(null);
+
+  // Bulk Actions
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -147,12 +151,105 @@ export default function Prices() {
       const { error: err } = await supabase.from('commodities').delete().eq('id', id);
       if (err) throw err;
       setCommodities(prev => prev.filter(c => c.id !== id));
+      setSelectedSymbols(prev => {
+        const deletedComm = commodities.find(c => c.id === id);
+        return deletedComm ? prev.filter(s => s !== deletedComm.symbol) : prev;
+      });
     } catch (err) {
       console.error(err);
       alert('حدث خطأ أثناء الحذف');
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleBulkAction = async (action: 'hide' | 'show' | 'activate' | 'suspend' | 'delete') => {
+    if (selectedSymbols.length === 0) return;
+    
+    const isSuperAdmin = adminUser?.role === 'super_admin';
+    const canManagePrices = isSuperAdmin || adminUser?.can_manage_prices;
+
+    if (!canManagePrices) {
+      alert("ليس لديك صلاحية لتعديل الأسعار");
+      return;
+    }
+
+    if (action === 'delete') {
+      if (!isSuperAdmin) {
+         alert("ليس لديك صلاحية لحذف الأسعار");
+         return;
+      }
+      if (!window.confirm(`هل أنت متأكد من حذف ${selectedSymbols.length} سلعة محددة؟`)) return;
+    }
+
+    setBulkActionLoading(true);
+    try {
+      const now = new Date().toISOString();
+      if (action === 'delete') {
+         const { error } = await supabase.from('commodities').delete().in('symbol', selectedSymbols);
+         if (error) throw error;
+         setCommodities(prev => prev.filter(c => !selectedSymbols.includes(c.symbol)));
+         setSelectedSymbols([]);
+      } else {
+         let updateData: any = { updated_at: now };
+         if (action === 'hide') updateData.is_visible = false;
+         if (action === 'show') updateData.is_visible = true;
+         if (action === 'activate') updateData.status = 'active';
+         if (action === 'suspend') updateData.status = 'inactive';
+
+         const { error } = await supabase.from('commodities').update(updateData).in('symbol', selectedSymbols);
+         if (error) throw error;
+         
+         setCommodities(prev => prev.map(c => {
+           if (selectedSymbols.includes(c.symbol)) {
+             return { ...c, ...updateData };
+           }
+           return c;
+         }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('حدث خطأ أثناء تنفيذ الإجراء');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const exportSelectedToExcel = async () => {
+     if (selectedSymbols.length === 0) return;
+     
+     setBulkActionLoading(true);
+     try {
+       const { data, error } = await supabase.from('commodities').select('*').in('symbol', selectedSymbols);
+       if (error) throw error;
+       
+       const exportData = (data || []).map(item => ({
+          symbol: item.symbol,
+          name_ar: item.name_ar,
+          name_en: item.name_en,
+          sector: item.sector,
+          price: item.price,
+          previous_price: item.previous_price,
+          change_value: item.change_value,
+          change_percent: item.change_percent,
+          trend: item.trend,
+          unit: item.unit,
+          source: item.source,
+          status: item.status,
+          is_visible: item.is_visible,
+          updated_at: item.updated_at
+       }));
+
+       const ws = XLSX.utils.json_to_sheet(exportData);
+       const wb = XLSX.utils.book_new();
+       XLSX.utils.book_append_sheet(wb, ws, "Selected_Prices");
+       XLSX.writeFile(wb, `Selected_Prices_${new Date().toISOString().split('T')[0]}.xlsx`);
+     } catch (err) {
+       console.error(err);
+       alert('حدث خطأ أثناء التصدير');
+     } finally {
+       setBulkActionLoading(false);
+     }
   };
 
   const handleQuickSaveCommodity = async (e: React.FormEvent) => {
@@ -908,6 +1005,47 @@ export default function Prices() {
           </div>
         </div>
 
+        {selectedSymbols.length > 0 && (
+          <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 flex flex-wrap gap-3 items-center">
+             <div className="text-primary-800 font-bold px-2">
+               تم تحديد {selectedSymbols.length}
+             </div>
+             <div className="h-6 w-px bg-primary-200 hidden md:block"></div>
+             
+             <button onClick={() => setSelectedSymbols([])} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-600 hover:bg-slate-50 transition">
+               إلغاء تحديد الكل
+             </button>
+
+             {(adminUser?.role === 'super_admin' || adminUser?.can_manage_prices) && (
+               <>
+                 <button onClick={() => handleBulkAction('show')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-700 hover:bg-slate-50 transition flex items-center gap-1 disabled:opacity-50">
+                   <Eye size={16} /> إظهار للزوار
+                 </button>
+                 <button onClick={() => handleBulkAction('hide')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-700 hover:bg-slate-50 transition flex items-center gap-1 disabled:opacity-50">
+                   <EyeOff size={16} /> إخفاء عن الزوار
+                 </button>
+                 
+                 <button onClick={() => handleBulkAction('activate')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-green-700 hover:bg-green-50 transition flex items-center gap-1 disabled:opacity-50">
+                   <Check size={16} /> تفعيل الحالة
+                 </button>
+                 <button onClick={() => handleBulkAction('suspend')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-orange-700 hover:bg-orange-50 transition flex items-center gap-1 disabled:opacity-50">
+                   <X size={16} /> تعطيل الحالة
+                 </button>
+               </>
+             )}
+
+             <button onClick={exportSelectedToExcel} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-blue-700 hover:bg-blue-50 transition flex items-center gap-1">
+               <Download size={16} /> تصدير Excel
+             </button>
+
+             {adminUser?.role === 'super_admin' && (
+                <button onClick={() => handleBulkAction('delete')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1 mr-auto disabled:opacity-50">
+                  <Trash2 size={16} /> حذف المحدد
+                </button>
+             )}
+          </div>
+        )}
+
         {loading ? (
            <div className="p-8 text-center text-slate-500">جاري التحميل...</div>
         ) : error ? (
@@ -918,6 +1056,22 @@ export default function Prices() {
               <table className="w-full text-sm text-right">
                  <thead className="bg-slate-50 text-slate-600 font-medium border-b">
                    <tr>
+                     <th className="px-4 py-3 w-10 text-center">
+                       <input 
+                         type="checkbox" 
+                         className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                         checked={commodities.length > 0 && commodities.every(c => selectedSymbols.includes(c.symbol))}
+                         onChange={e => {
+                           if (e.target.checked) {
+                             const newSymbols = [...new Set([...selectedSymbols, ...commodities.map(c => c.symbol)])];
+                             setSelectedSymbols(newSymbols);
+                           } else {
+                             const currentSymbols = commodities.map(c => c.symbol);
+                             setSelectedSymbols(prev => prev.filter(s => !currentSymbols.includes(s)));
+                           }
+                         }}
+                       />
+                     </th>
                      <th className="px-4 py-3">الرمز</th>
                      <th className="px-4 py-3">الاسم</th>
                      <th className="px-4 py-3">القطاع</th>
@@ -930,7 +1084,21 @@ export default function Prices() {
                  </thead>
                  <tbody className="divide-y divide-slate-100">
                    {commodities.map(item => (
-                       <tr key={item.id} className="hover:bg-slate-50/50">
+                       <tr key={item.id} className={`hover:bg-slate-50/50 ${selectedSymbols.includes(item.symbol) ? 'bg-primary-50/30' : ''}`}>
+                         <td className="px-4 py-3 text-center">
+                           <input 
+                             type="checkbox"
+                             className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                             checked={selectedSymbols.includes(item.symbol)}
+                             onChange={e => {
+                               if (e.target.checked) {
+                                 setSelectedSymbols(prev => [...prev, item.symbol]);
+                               } else {
+                                 setSelectedSymbols(prev => prev.filter(s => s !== item.symbol));
+                               }
+                             }}
+                           />
+                         </td>
                          <td className="px-4 py-3 font-medium font-mono text-slate-900" dir="ltr">{item.symbol}</td>
                          <td className="px-4 py-3 text-slate-800">{item.name_ar}</td>
                          <td className="px-4 py-3">

@@ -7,7 +7,7 @@ import {
   MessageSquare, 
   Eye, 
   Activity,
-  Clock 
+  Clock
 } from 'lucide-react';
 
 interface Stats {
@@ -67,8 +67,10 @@ export default function Dashboard() {
       });
 
     } catch (err: any) {
-      console.error('Error fetching stats:', err);
-      setError('حدث خطأ في تحميل الإحصائيات');
+      if (err.code !== 'PGRST116') {
+        console.error('Error fetching stats:', err);
+        setError('حدث خطأ في تحميل الإحصائيات');
+      }
     } finally {
       setLoading(false);
     }
@@ -93,7 +95,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">نظرة عامة</h1>
         {stats?.lastPriceUpdate && (
           <div className="flex items-center gap-2 text-sm text-slate-500 bg-white px-3 py-1.5 rounded-full border shadow-sm">
