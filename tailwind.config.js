@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["IBM Plex Sans Arabic", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Tajawal", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         primary: {

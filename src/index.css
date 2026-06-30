@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +6,19 @@
 @layer base {
   body {
     @apply antialiased m-0 p-0 text-slate-800 bg-slate-50 dark:bg-dark-bg dark:text-slate-200;
+    font-family: 'Tajawal', sans-serif;
+  }
+  input, button, select, textarea, table {
+    font-family: 'Tajawal', sans-serif;
+  }
+  th {
+    font-size: 14px;
+  }
+  td {
+    font-size: 13px;
+  }
+  button {
+    font-size: 13px;
   }
 }
 
