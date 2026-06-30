@@ -190,7 +190,7 @@ export default function Admins() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">إدارة مدراء النظام</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">إدارة مدراء النظام</h1>
         <button 
           onClick={openAddModal}
           className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
@@ -200,7 +200,7 @@ export default function Admins() {
         </button>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg flex items-start gap-3">
+      <div className="bg-blue-50 border dark:border-dark-border border-blue-200 text-blue-800 p-4 rounded-lg flex items-start gap-3">
         <ShieldAlert className="mt-0.5 shrink-0" size={20} />
         <div>
           <p className="font-semibold text-sm mb-1">ملاحظة هامة حول إضافة الأدمن</p>
@@ -210,10 +210,10 @@ export default function Admins() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
-            <thead className="bg-slate-50 text-slate-600 font-medium border-b">
+            <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 font-medium border-b dark:border-dark-border">
               <tr>
                 <th className="px-4 py-3">البريد الإلكتروني</th>
                 <th className="px-4 py-3">الاسم</th>
@@ -222,11 +222,11 @@ export default function Admins() {
                 <th className="px-4 py-3 text-center">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
               {admins.map(item => (
-                <tr key={item.email} className="hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-mono text-slate-600" dir="ltr">{item.email}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{item.full_name || '-'}</td>
+                <tr key={item.email} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 dark:bg-dark-bg/50">
+                  <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400" dir="ltr">{item.email}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{item.full_name || '-'}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       item.role === 'super_admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
@@ -271,15 +271,15 @@ export default function Admins() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b dark:border-dark-border">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <ShieldCheck size={24} className="text-primary-600" />
                 {editingItem ? 'تعديل الصلاحيات' : 'إضافة أدمن جديد'}
               </h2>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 dark:text-slate-400"
               >
                 <X size={24} />
               </button>
@@ -289,7 +289,7 @@ export default function Admins() {
               <form id="admin-form" onSubmit={saveAdmin} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">البريد الإلكتروني *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني *</label>
                     <input 
                       type="email" 
                       dir="ltr"
@@ -297,27 +297,27 @@ export default function Admins() {
                       disabled={!!editingItem} // Cannot change email if editing
                       value={form.email || ''} 
                       onChange={e => setForm({...form, email: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none disabled:bg-slate-100 disabled:text-slate-500" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 dark:text-slate-400" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم الكامل</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم الكامل</label>
                     <input 
                       type="text" 
                       value={form.full_name || ''} 
                       onChange={e => setForm({...form, full_name: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الدور (Role)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الدور (Role)</label>
                     <select
                       value={form.role}
                       onChange={e => setForm({...form, role: e.target.value as AdminRole})}
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white bg-white dark:bg-dark-card"
                       disabled={editingItem?.role === 'super_admin'}
                     >
                       <option value="Admin">Admin</option>
@@ -332,17 +332,17 @@ export default function Admins() {
                       id="is_active" 
                       checked={form.is_active} 
                       onChange={e => setForm({...form, is_active: e.target.checked})} 
-                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                      className="w-4 h-4 rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500"
                       disabled={editingItem?.role === 'super_admin' || editingItem?.email === currentUser?.email}
                     />
-                    <label htmlFor="is_active" className="text-sm font-medium text-slate-700">تفعيل الحساب</label>
+                    <label htmlFor="is_active" className="text-sm font-medium text-slate-700 dark:text-slate-300">تفعيل الحساب</label>
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold text-slate-800 mb-4">الصلاحيات التفصيلية</h3>
+                <div className="border-t dark:border-dark-border pt-4">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-4">الصلاحيات التفصيلية</h3>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 bg-slate-50 p-4 rounded-lg border">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 bg-slate-50 dark:bg-dark-bg p-4 rounded-lg border dark:border-dark-border">
                     {[
                       { key: 'can_manage_admins', label: 'إدارة الأدمن' },
                       { key: 'can_manage_prices', label: 'إدارة الأسعار' },
@@ -359,10 +359,10 @@ export default function Admins() {
                           id={perm.key} 
                           checked={(form as any)[perm.key]} 
                           onChange={e => setForm({...form, [perm.key]: e.target.checked})} 
-                          className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" 
+                          className="w-4 h-4 rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500" 
                           disabled={form.role === 'super_admin'}
                         />
-                        <label htmlFor={perm.key} className="text-sm text-slate-700 cursor-pointer">
+                        <label htmlFor={perm.key} className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                           {perm.label} 
                           {form.role === 'super_admin' && <span className="text-xs text-slate-400 mr-2">(مفعل تلقائياً)</span>}
                         </label>
@@ -373,11 +373,11 @@ export default function Admins() {
               </form>
             </div>
             
-            <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
+            <div className="p-4 border-t dark:border-dark-border flex justify-end gap-3 bg-slate-50 dark:bg-dark-bg rounded-b-xl">
               <button 
                 type="button" 
                 onClick={() => setIsModalOpen(false)} 
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition"
+                className="px-4 py-2 border dark:border-dark-border rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-dark-card hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
               >
                 إلغاء
               </button>

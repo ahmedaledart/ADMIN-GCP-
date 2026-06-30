@@ -87,14 +87,14 @@ export default function Messages() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">صندوق الرسائل</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">صندوق الرسائل</h1>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="divide-y divide-slate-100">
+      <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
+        <div className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
           {messages.map(msg => (
             <div 
               key={msg.id} 
-              className={`p-6 hover:bg-slate-50 transition-colors ${!msg.is_read ? 'bg-primary-50/30' : ''}`}
+              className={`p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition-colors ${!msg.is_read ? 'bg-primary-50/30' : ''}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1" onClick={() => markAsRead(msg.id, msg.is_read)}>
@@ -103,17 +103,17 @@ export default function Messages() {
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className={`text-base flex-1 ${!msg.is_read ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                      <h3 className={`text-base flex-1 ${!msg.is_read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
                         {msg.sender_name}
                       </h3>
-                      <span className="text-xs text-slate-500 whitespace-nowrap" dir="ltr">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap" dir="ltr">
                         {new Date(msg.created_at).toLocaleString('ar-SA')}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-500 mb-3" dir="ltr">{msg.sender_email}</p>
-                    <div className="bg-white border rounded-lg p-4">
-                      <h4 className="font-semibold text-slate-800 mb-2">{msg.subject}</h4>
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{msg.body}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3" dir="ltr">{msg.sender_email}</p>
+                    <div className="bg-white dark:bg-dark-card border dark:border-dark-border rounded-lg p-4">
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">{msg.subject}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{msg.body}</p>
                     </div>
                   </div>
                 </div>
@@ -126,14 +126,14 @@ export default function Messages() {
                     {deletingId === msg.id ? 'تأكيد الحذف؟' : <Trash2 size={18} />}
                   </button>
                   {deletingId === msg.id && (
-                    <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="p-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">إلغاء</button>
+                    <button onClick={(e) => { e.stopPropagation(); setDeletingId(null); }} className="p-2 text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-400 rounded-lg">إلغاء</button>
                   )}
                 </div>
               </div>
             </div>
           ))}
           {messages.length === 0 && (
-            <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
+            <div className="p-12 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center gap-3">
               <MailOpen size={32} className="text-slate-300" />
               <p>لا توجد رسائل</p>
             </div>

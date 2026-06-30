@@ -75,53 +75,53 @@ export default function Visits() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">سجل الزيارات</h1>
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white">سجل الزيارات</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6 flex items-center gap-4">
+        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border p-6 flex items-center gap-4">
           <div className="p-4 rounded-lg bg-blue-100 text-blue-600">
             <Activity size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">إجمالي الزيارات</p>
-            <h3 className="text-2xl font-bold text-slate-900">{stats.total.toLocaleString('en-US')}</h3>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">إجمالي الزيارات</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total.toLocaleString('en-US')}</h3>
           </div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border p-6 flex items-center gap-4">
+        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border p-6 flex items-center gap-4">
           <div className="p-4 rounded-lg bg-emerald-100 text-emerald-600">
             <Calendar size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">زيارات اليوم</p>
-            <h3 className="text-2xl font-bold text-slate-900">{stats.today.toLocaleString('en-US')}</h3>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">زيارات اليوم</p>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.today.toLocaleString('en-US')}</h3>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border overflow-hidden">
-          <div className="p-4 border-b bg-slate-50">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2 pr-1">
-              <Monitor size={18} className="text-slate-500" />
+        <div className="lg:col-span-2 bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
+          <div className="p-4 border-b dark:border-dark-border bg-slate-50 dark:bg-dark-bg">
+            <h2 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 pr-1">
+              <Monitor size={18} className="text-slate-500 dark:text-slate-400" />
               أحدث الزيارات
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
-              <thead className="bg-white text-slate-500 border-b">
+              <thead className="bg-white dark:bg-dark-card text-slate-500 dark:text-slate-400 border-b dark:border-dark-border">
                 <tr>
                   <th className="px-4 py-3 font-medium">المسار</th>
                   <th className="px-4 py-3 font-medium">IP</th>
                   <th className="px-4 py-3 font-medium">الوقـت</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
                 {visits.map(v => (
-                  <tr key={v.id} className="hover:bg-slate-50/50">
+                  <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 dark:bg-dark-bg/50">
                     <td className="px-4 py-3 font-mono text-xs text-primary-600" dir="ltr">{v.path}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500" dir="ltr">{v.ip_address || '-'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400" dir="ltr">{v.ip_address || '-'}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                       {new Date(v.visited_at).toLocaleString('ar-SA')}
                     </td>
                   </tr>
@@ -131,10 +131,10 @@ export default function Visits() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden h-fit">
-          <div className="p-4 border-b bg-slate-50">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2 pr-1">
-              <Navigation size={18} className="text-slate-500" />
+        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden h-fit">
+          <div className="p-4 border-b dark:border-dark-border bg-slate-50 dark:bg-dark-bg">
+            <h2 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 pr-1">
+              <Navigation size={18} className="text-slate-500 dark:text-slate-400" />
               أكثر الصفحات الأخيرة زيارة
             </h2>
           </div>
@@ -142,13 +142,13 @@ export default function Visits() {
             <div className="space-y-4">
               {topPages.map((page, idx) => (
                 <div key={idx} className="flex items-center justify-between">
-                  <span className="font-mono text-sm text-slate-700 truncate mr-2" dir="ltr">{page.path}</span>
-                  <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-medium min-w-10 text-center">
+                  <span className="font-mono text-sm text-slate-700 dark:text-slate-300 truncate mr-2" dir="ltr">{page.path}</span>
+                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded text-xs font-medium min-w-10 text-center">
                     {page.count}
                   </span>
                 </div>
               ))}
-              {topPages.length === 0 && <p className="text-slate-500 text-sm text-center">لا توجد بيانات كافية</p>}
+              {topPages.length === 0 && <p className="text-slate-500 dark:text-slate-400 text-sm text-center">لا توجد بيانات كافية</p>}
             </div>
           </div>
         </div>

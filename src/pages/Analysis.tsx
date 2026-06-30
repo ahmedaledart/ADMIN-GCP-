@@ -161,7 +161,7 @@ export default function AnalysisPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">إدارة التحليلات</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">إدارة التحليلات</h1>
         <button 
           onClick={openAddModal}
           className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
@@ -171,10 +171,10 @@ export default function AnalysisPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
-            <thead className="bg-slate-50 text-slate-600 font-medium border-b">
+            <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 font-medium border-b dark:border-dark-border">
               <tr>
                 <th className="px-4 py-4 w-1/3">العنوان</th>
                 <th className="px-4 py-4">السلعة</th>
@@ -184,22 +184,22 @@ export default function AnalysisPage() {
                 <th className="px-4 py-4 text-center">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
               {analyses.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/50">
+                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 dark:bg-dark-bg/50">
                   <td className="px-4 py-4">
-                    <div className="font-medium text-slate-900">{item.title}</div>
+                    <div className="font-medium text-slate-900 dark:text-white">{item.title}</div>
                   </td>
                   <td className="px-4 py-3 font-mono" dir="ltr">{item.asset_symbol || '-'}</td>
                   <td className="px-4 py-3">{item.author || '-'}</td>
-                  <td className="px-4 py-3 text-center text-slate-500 text-xs">
+                  <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 text-xs">
                     {new Date(item.created_at).toLocaleString('ar-SA')}
                   </td>
                   <td className="px-4 py-3 text-center">
                      <button
                         onClick={() => togglePublish(item)}
                         className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${
-                          item.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          item.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                         }`}
                       >
                         {item.is_published ? 'منشور' : 'مخفي'}
@@ -218,7 +218,7 @@ export default function AnalysisPage() {
                           {deletingId === item.id ? 'تأكيد الحذف' : <Trash2 size={18} />}
                         </button>
                         {deletingId === item.id && (
-                          <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 hover:text-slate-700">إلغاء</button>
+                          <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300">إلغاء</button>
                         )}
                       </div>
                     </div>
@@ -227,7 +227,7 @@ export default function AnalysisPage() {
               ))}
               {analyses.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">لا يوجد بيانات</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400">لا يوجد بيانات</td>
                 </tr>
               )}
             </tbody>
@@ -238,55 +238,55 @@ export default function AnalysisPage() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b dark:border-dark-border">
               <h2 className="text-xl font-bold">{editingItem ? 'تعديل التحليل' : 'تحليل جديد'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400"><X size={24} /></button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
               <form id="analysis-form" onSubmit={saveAnalysis} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">العنوان *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">العنوان *</label>
                   <input 
                     required 
                     type="text" 
                     value={form.title} 
                     onChange={e => setForm({...form, title: e.target.value})} 
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                    className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">رمز السلعة</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">رمز السلعة</label>
                     <input 
                       type="text" 
                       dir="ltr"
                       placeholder="e.g. BTC/USD"
                       value={form.asset_symbol} 
                       onChange={e => setForm({...form, asset_symbol: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">اسم المحلل</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم المحلل</label>
                     <input 
                       type="text" 
                       value={form.author} 
                       onChange={e => setForm({...form, author: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-medium text-slate-700">التحليل *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">التحليل *</label>
                   </div>
                   <textarea 
                     required 
                     rows={10} 
                     value={form.content} 
                     onChange={e => setForm({...form, content: e.target.value})} 
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none resize-y" 
+                    className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white resize-y" 
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -295,17 +295,17 @@ export default function AnalysisPage() {
                     id="is_published" 
                     checked={form.is_published} 
                     onChange={e => setForm({...form, is_published: e.target.checked})} 
-                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500" 
+                    className="rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500" 
                   />
-                  <label htmlFor="is_published" className="text-sm font-medium text-slate-700">نشر فوری</label>
+                  <label htmlFor="is_published" className="text-sm font-medium text-slate-700 dark:text-slate-300">نشر فوری</label>
                 </div>
               </form>
             </div>
-            <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
+            <div className="p-4 border-t dark:border-dark-border flex justify-end gap-3 bg-slate-50 dark:bg-dark-bg rounded-b-xl">
               <button 
                 type="button" 
                 onClick={() => setIsModalOpen(false)} 
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition"
+                className="px-4 py-2 border dark:border-dark-border rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-dark-card hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
               >
                 إلغاء
               </button>

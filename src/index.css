@@ -4,6 +4,7 @@
 
 @layer base {
   body {
-    @apply antialiased m-0 p-0 text-slate-800 bg-slate-50;
+    @apply antialiased m-0 p-0 text-slate-800 bg-slate-50 dark:bg-dark-bg dark:text-slate-200;
   }
 }
+

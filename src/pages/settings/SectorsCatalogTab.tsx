@@ -123,16 +123,16 @@ export default function SectorsCatalogTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">إدارة أنواع السلع (القطاعات)</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">إدارة أنواع السلع (القطاعات)</h2>
         <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
           <Plus size={18} />
           إضافة قطاع
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-lg shadow border dark:border-dark-border overflow-hidden">
         <table className="w-full text-sm text-right">
-          <thead className="bg-slate-50 text-slate-600 border-b">
+          <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 border-b dark:border-dark-border">
             <tr>
               <th className="px-4 py-3 font-medium w-16">الترتيب</th>
               <th className="px-4 py-3 font-medium">كود القطاع</th>
@@ -142,7 +142,7 @@ export default function SectorsCatalogTab() {
               <th className="px-4 py-3 w-32 font-medium">إجراءات</th>
             </tr>
           </thead>
-          <tbody className="divide-y text-slate-700">
+          <tbody className="divide-y text-slate-700 dark:text-slate-300">
             {sectors.map(item => (
               <tr key={item.id} className={!item.is_active ? 'opacity-50' : ''}>
                 <td className="px-4 py-3 text-center">{item.sort_order}</td>
@@ -170,7 +170,7 @@ export default function SectorsCatalogTab() {
             ))}
             {sectors.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">لا توجد قطاعات مضافة</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">لا توجد قطاعات مضافة</td>
               </tr>
             )}
           </tbody>
@@ -179,10 +179,10 @@ export default function SectorsCatalogTab() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">{form.id ? 'تعديل قطاع' : 'إضافة قطاع جديد'}</h3>
-              <button disabled={saving} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b dark:border-dark-border flex justify-between items-center bg-slate-50 dark:bg-dark-bg">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{form.id ? 'تعديل قطاع' : 'إضافة قطاع جديد'}</h3>
+              <button disabled={saving} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">
                 <X size={20} />
               </button>
             </div>
@@ -198,39 +198,39 @@ export default function SectorsCatalogTab() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الكود (مثال: metals) *</label>
-                    <input required type="text" value={form.sector_code} onChange={e => setForm({...form, sector_code: e.target.value.toLowerCase().replace(/\s+/g, '')})} className="w-full border rounded-lg px-3 py-2 bg-slate-50 font-mono text-sm" placeholder="metals" disabled={!!form.id} />
-                    {form.id && <p className="text-xs text-slate-500 mt-1">لا يمكن تغيير الكود بعد الإنشاء</p>}
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الكود (مثال: metals) *</label>
+                    <input required type="text" value={form.sector_code} onChange={e => setForm({...form, sector_code: e.target.value.toLowerCase().replace(/\s+/g, '')})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-slate-50 dark:bg-dark-bg font-mono text-sm" placeholder="metals" disabled={!!form.id} />
+                    {form.id && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">لا يمكن تغيير الكود بعد الإنشاء</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الترتيب (Sort Order) *</label>
-                    <input required type="number" value={form.sort_order} onChange={e => setForm({...form, sort_order: parseInt(e.target.value) || 0})} className="w-full border rounded-lg px-3 py-2" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الترتيب (Sort Order) *</label>
+                    <input required type="number" value={form.sort_order} onChange={e => setForm({...form, sort_order: parseInt(e.target.value) || 0})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
-                    <input required type="text" value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="المعادن" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربية *</label>
+                    <input required type="text" value={form.name_ar} onChange={e => setForm({...form, name_ar: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" placeholder="المعادن" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
-                    <input required type="text" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" placeholder="Metals" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالإنجليزية *</label>
+                    <input required type="text" value={form.name_en} onChange={e => setForm({...form, name_en: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" placeholder="Metals" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الوصف</label>
-                  <textarea rows={2} value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="w-full border rounded-lg px-3 py-2 resize-none" placeholder="وصف القطاع (اختياري)"></textarea>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الوصف</label>
+                  <textarea rows={2} value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 resize-none" placeholder="وصف القطاع (اختياري)"></textarea>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
                   <input type="checkbox" id="is_active" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
-                  <label htmlFor="is_active" className="text-sm font-medium text-slate-700">مفعل (يظهر في القوائم)</label>
+                  <label htmlFor="is_active" className="text-sm font-medium text-slate-700 dark:text-slate-300">مفعل (يظهر في القوائم)</label>
                 </div>
 
                 <div className="pt-6 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border dark:border-dark-border rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg">إلغاء</button>
                   <button type="submit" disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
                     {saving ? 'جاري الحفظ...' : 'حفظ'}
                   </button>

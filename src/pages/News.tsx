@@ -175,7 +175,7 @@ export default function News() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">إدارة الأخبار</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">إدارة الأخبار</h1>
         
         <button 
           onClick={openAddModal}
@@ -186,10 +186,10 @@ export default function News() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right">
-            <thead className="bg-slate-50 text-slate-600 font-medium border-b">
+            <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 font-medium border-b dark:border-dark-border">
               <tr>
                 <th className="px-4 py-4 w-1/3">العنوان (عربي)</th>
                 <th className="px-4 py-4 w-1/4">العنوان (إنجليزي)</th>
@@ -198,24 +198,24 @@ export default function News() {
                 <th className="px-4 py-4 text-center">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
               {news.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/50">
+                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 dark:bg-dark-bg/50">
                   <td className="px-4 py-4">
-                    <div className="font-medium text-slate-900 line-clamp-1">{item.title_ar}</div>
-                    {item.summary_ar && <div className="text-xs text-slate-500 line-clamp-1 mt-1">{item.summary_ar}</div>}
+                    <div className="font-medium text-slate-900 dark:text-white line-clamp-1">{item.title_ar}</div>
+                    {item.summary_ar && <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">{item.summary_ar}</div>}
                   </td>
                   <td className="px-4 py-4" dir="ltr">
-                    <div className="font-medium text-slate-900 line-clamp-1">{item.title_en}</div>
+                    <div className="font-medium text-slate-900 dark:text-white line-clamp-1">{item.title_en}</div>
                   </td>
-                  <td className="px-4 py-3 text-center text-slate-500 text-xs">
+                  <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 text-xs">
                     {new Date(item.created_at).toLocaleString('ar-SA')}
                   </td>
                   <td className="px-4 py-3 text-center">
                      <button
                         onClick={() => togglePublish(item)}
                         className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${
-                          item.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          item.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
                         }`}
                       >
                         {item.is_published ? 'منشور' : 'مخفي'}
@@ -234,7 +234,7 @@ export default function News() {
                           {deletingId === item.id ? 'تأكيد الحذف' : <Trash2 size={18} />}
                         </button>
                         {deletingId === item.id && (
-                          <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 hover:text-slate-700">إلغاء</button>
+                          <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300">إلغاء</button>
                         )}
                       </div>
                     </div>
@@ -243,7 +243,7 @@ export default function News() {
               ))}
               {news.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500">لا توجد أخبار مضافة حتى الآن</td>
+                  <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400">لا توجد أخبار مضافة حتى الآن</td>
                 </tr>
               )}
             </tbody>
@@ -253,103 +253,103 @@ export default function News() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b dark:border-dark-border">
               <h2 className="text-xl font-bold">{editingItem ? 'تعديل الخبر' : 'خبر جديد'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400"><X size={24} /></button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
               <form id="news-form" onSubmit={saveNews} className="space-y-6">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b dark:border-dark-border pb-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">العنوان بالعربي *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">العنوان بالعربي *</label>
                     <input 
                       required 
                       type="text" 
                       value={form.title_ar} 
                       onChange={e => setForm({...form, title_ar: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">العنوان بالإنجليزي (Title EN) *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">العنوان بالإنجليزي (Title EN) *</label>
                     <input 
                       required 
                       type="text" 
                       dir="ltr"
                       value={form.title_en} 
                       onChange={e => setForm({...form, title_en: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b dark:border-dark-border pb-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">ملخص قصير عربي</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ملخص قصير عربي</label>
                     <textarea 
                       rows={2} 
                       value={form.summary_ar} 
                       onChange={e => setForm({...form, summary_ar: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">ملخص قصير إنجليزي (Summary EN)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ملخص قصير إنجليزي (Summary EN)</label>
                     <textarea 
                       rows={2} 
                       dir="ltr"
                       value={form.summary_en} 
                       onChange={e => setForm({...form, summary_en: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b dark:border-dark-border pb-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">المحتوى العربي *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">المحتوى العربي *</label>
                     <textarea 
                       required 
                       rows={8} 
                       value={form.content_ar} 
                       onChange={e => setForm({...form, content_ar: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none resize-y" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white resize-y" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">المحتوى الإنجليزي (Content EN) *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">المحتوى الإنجليزي (Content EN) *</label>
                     <textarea 
                       required 
                       rows={8} 
                       dir="ltr"
                       value={form.content_en} 
                       onChange={e => setForm({...form, content_en: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none resize-y" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white resize-y" 
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">صورة الغلاف (رابط URL)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">صورة الغلاف (رابط URL)</label>
                     <input 
                       type="url" 
                       dir="ltr"
                       value={form.image_url || ''} 
                       onChange={e => setForm({...form, image_url: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">المصدر (Source)</label>
                     <input 
                       type="text" 
                       dir="ltr"
                       value={form.source || ''} 
                       onChange={e => setForm({...form, source: e.target.value})} 
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                      className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                     />
                   </div>
                 </div>
@@ -360,17 +360,17 @@ export default function News() {
                     id="is_published" 
                     checked={form.is_published} 
                     onChange={e => setForm({...form, is_published: e.target.checked})} 
-                    className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" 
+                    className="w-5 h-5 rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500" 
                   />
-                  <label htmlFor="is_published" className="text-sm font-medium text-slate-800">نشر الخبر فوراً وإظهاره للزوار</label>
+                  <label htmlFor="is_published" className="text-sm font-medium text-slate-800 dark:text-slate-200">نشر الخبر فوراً وإظهاره للزوار</label>
                 </div>
               </form>
             </div>
-            <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
+            <div className="p-4 border-t dark:border-dark-border flex justify-end gap-3 bg-slate-50 dark:bg-dark-bg rounded-b-xl">
               <button 
                 type="button" 
                 onClick={() => setIsModalOpen(false)} 
-                className="px-4 py-2 border rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition"
+                className="px-4 py-2 border dark:border-dark-border rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-dark-card hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
               >
                 إلغاء
               </button>

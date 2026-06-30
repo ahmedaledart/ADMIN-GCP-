@@ -3,6 +3,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}"
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -18,6 +19,14 @@ export default {
           900: '#1e3a8a',
         },
         brand: '#0052cc',
+        dark: {
+          bg: '#0A1128',
+          card: '#121E3D',
+          border: '#1C2E5A',
+        },
+        gold: {
+          DEFAULT: '#D4AF37',
+        }
       }
     },
   },

@@ -101,16 +101,16 @@ export default function UnitsCatalogTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-slate-800">إدارة الوحدات المرجعية</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">إدارة الوحدات المرجعية</h2>
         <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
           <Plus size={18} />
           إضافة وحدة
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-lg shadow border dark:border-dark-border overflow-hidden">
         <table className="w-full text-sm text-right">
-          <thead className="bg-slate-50 text-slate-600 border-b">
+          <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 border-b dark:border-dark-border">
             <tr>
               <th className="px-4 py-3 font-medium">الكود</th>
               <th className="px-4 py-3 font-medium">الاسم</th>
@@ -118,10 +118,10 @@ export default function UnitsCatalogTab() {
               <th className="px-4 py-3 w-32 font-medium">إجراءات</th>
             </tr>
           </thead>
-          <tbody className="divide-y text-slate-700">
+          <tbody className="divide-y text-slate-700 dark:text-slate-300">
             {units.map(item => (
               <tr key={item.id} className={!item.is_active ? 'opacity-50' : ''}>
-                <td className="px-4 py-3 font-semibold text-slate-900">{item.unit_code}</td>
+                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{item.unit_code}</td>
                 <td className="px-4 py-3">{item.unit_ar} / {item.unit_en}</td>
                 <td className="px-4 py-3">
                   <button onClick={() => toggleStatus(item)} className={`px-2 py-1 text-xs rounded-full ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -144,7 +144,7 @@ export default function UnitsCatalogTab() {
             ))}
             {units.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">لا توجد وحدات مضافة</td>
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">لا توجد وحدات مضافة</td>
               </tr>
             )}
           </tbody>
@@ -153,10 +153,10 @@ export default function UnitsCatalogTab() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">{form.id ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}</h3>
-              <button disabled={saving} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b dark:border-dark-border flex justify-between items-center bg-slate-50 dark:bg-dark-bg">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{form.id ? 'تعديل الوحدة' : 'إضافة وحدة جديدة'}</h3>
+              <button disabled={saving} onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">
                 <X size={20} />
               </button>
             </div>
@@ -171,25 +171,25 @@ export default function UnitsCatalogTab() {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الكود (مثال: barrel) *</label>
-                  <input required type="text" value={form.unit_code} onChange={e => setForm({...form, unit_code: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الكود (مثال: barrel) *</label>
+                  <input required type="text" value={form.unit_code} onChange={e => setForm({...form, unit_code: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية (مثال: برميل) *</label>
-                  <input required type="text" value={form.unit_ar} onChange={e => setForm({...form, unit_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربية (مثال: برميل) *</label>
+                  <input required type="text" value={form.unit_ar} onChange={e => setForm({...form, unit_ar: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية (مثال: Barrel) *</label>
-                  <input required type="text" value={form.unit_en} onChange={e => setForm({...form, unit_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالإنجليزية (مثال: Barrel) *</label>
+                  <input required type="text" value={form.unit_en} onChange={e => setForm({...form, unit_en: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
                   <input type="checkbox" id="unit_is_active" checked={form.is_active} onChange={e => setForm({...form, is_active: e.target.checked})} className="w-4 h-4 text-primary-600 rounded" />
-                  <label htmlFor="unit_is_active" className="text-sm font-medium text-slate-700">مفعل (يظهر في القوائم)</label>
+                  <label htmlFor="unit_is_active" className="text-sm font-medium text-slate-700 dark:text-slate-300">مفعل (يظهر في القوائم)</label>
                 </div>
 
                 <div className="pt-6 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border dark:border-dark-border rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg">إلغاء</button>
                   <button type="submit" disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
                     {saving ? 'جاري الحفظ...' : 'حفظ'}
                   </button>

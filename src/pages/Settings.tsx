@@ -85,17 +85,17 @@ export default function Settings() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-slate-200 rounded-lg text-slate-700">
+        <div className="p-2 bg-slate-200 rounded-lg text-slate-700 dark:text-slate-300">
           <Settings2 size={24} />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900">الإعدادات</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">الإعدادات</h1>
       </div>
 
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-2 border-b dark:border-dark-border">
         <button 
           onClick={() => setActiveTab('general')}
           className={`pb-3 px-1 border-b-2 font-medium text-sm transition ${
-            activeTab === 'general' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            activeTab === 'general' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
           }`}
         >
           إعدادات المنصة
@@ -105,7 +105,7 @@ export default function Settings() {
             <button 
               onClick={() => setActiveTab('sectors')}
               className={`pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 transition ${
-                activeTab === 'sectors' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                activeTab === 'sectors' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
               }`}
             >
               <Package size={16} />
@@ -114,7 +114,7 @@ export default function Settings() {
             <button 
               onClick={() => setActiveTab('commodities')}
               className={`pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 transition ${
-                activeTab === 'commodities' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                activeTab === 'commodities' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
               }`}
             >
               <Package size={16} />
@@ -123,7 +123,7 @@ export default function Settings() {
             <button 
               onClick={() => setActiveTab('units')}
               className={`pb-3 px-1 border-b-2 font-medium text-sm flex items-center gap-1.5 transition ${
-                activeTab === 'units' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+                activeTab === 'units' ? 'border-primary-600 text-primary-600' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
               }`}
             >
               <CheckSquare size={16} />
@@ -137,94 +137,94 @@ export default function Settings() {
         {activeTab === 'general' && (
           <>
             {loading && !settings ? (
-              <div className="p-8 text-center text-slate-500">جاري التحميل...</div>
+              <div className="p-8 text-center text-slate-500 dark:text-slate-400">جاري التحميل...</div>
             ) : !settings ? (
               <div className="p-4 bg-red-50 text-red-600 rounded-lg">لم يتم العثور على الإعدادات</div>
             ) : (
               <form onSubmit={handleSave} className="space-y-8">
-                {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100">{error}</div>}
-                {success && <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-100">تم حفظ الإعدادات بنجاح</div>}
+                {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg border dark:border-dark-border border-red-100">{error}</div>}
+                {success && <div className="p-4 bg-green-50 text-green-700 rounded-lg border dark:border-dark-border border-green-100">تم حفظ الإعدادات بنجاح</div>}
 
-                <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                  <div className="p-4 border-b bg-slate-50">
-                    <h2 className="font-semibold text-slate-800">المعلومات الأساسية</h2>
+                <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
+                  <div className="p-4 border-b dark:border-dark-border bg-slate-50 dark:bg-dark-bg">
+                    <h2 className="font-semibold text-slate-800 dark:text-slate-200">المعلومات الأساسية</h2>
                   </div>
                   <div className="p-6 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">اسم المنصة</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم المنصة</label>
                       <input 
                         type="text" 
                         required
                         value={settings.site_name || ''} 
                         onChange={e => setSettings({...settings, site_name: e.target.value})}
-                        className="w-full max-w-md border rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                        className="w-full max-w-md border dark:border-dark-border rounded-lg px-3 py-2 focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">رابط الشعار (Logo URL)</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">رابط الشعار (Logo URL)</label>
                       <input 
                         type="url" 
                         dir="ltr"
                         value={settings.logo_url || ''} 
                         onChange={e => setSettings({...settings, logo_url: e.target.value})}
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">رابط الأيقونة (Favicon URL)</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">رابط الأيقونة (Favicon URL)</label>
                       <input 
                         type="url" 
                         dir="ltr"
                         value={settings.favicon_url || ''} 
                         onChange={e => setSettings({...settings, favicon_url: e.target.value})}
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                  <div className="p-4 border-b bg-slate-50">
-                    <h2 className="font-semibold text-slate-800">بيانات التواصل والتنبيهات</h2>
+                <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
+                  <div className="p-4 border-b dark:border-dark-border bg-slate-50 dark:bg-dark-bg">
+                    <h2 className="font-semibold text-slate-800 dark:text-slate-200">بيانات التواصل والتنبيهات</h2>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">البريد الإلكتروني للتواصل</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني للتواصل</label>
                         <input 
                           type="email" 
                           dir="ltr"
                           value={settings.contact_email || ''} 
                           onChange={e => setSettings({...settings, contact_email: e.target.value})}
-                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                          className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">رقم الهاتف</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">رقم الهاتف</label>
                         <input 
                           type="tel" 
                           dir="ltr"
                           value={settings.contact_phone || ''} 
                           onChange={e => setSettings({...settings, contact_phone: e.target.value})}
-                          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none" 
+                          className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white" 
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">الشريط الإعلاني (Announcement)</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الشريط الإعلاني (Announcement)</label>
                       <textarea 
                         rows={2}
                         value={settings.announcement || ''} 
                         onChange={e => setSettings({...settings, announcement: e.target.value})}
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none resize-y" 
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 text-sm focus:ring-primary-500 focus:border-primary-500 outline-none dark:bg-dark-card dark:text-white resize-y" 
                         placeholder="اتركه فارغاً لإخفاء الشريط"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-red-50 rounded-xl border border-red-200 overflow-hidden">
-                  <div className="p-4 border-b border-red-200 flex items-center gap-2 text-red-700">
+                <div className="bg-red-50 rounded-xl border dark:border-dark-border border-red-200 overflow-hidden">
+                  <div className="p-4 border-b dark:border-dark-border border-red-200 flex items-center gap-2 text-red-700">
                     <ShieldAlert size={18} />
                     <h2 className="font-semibold">منطقة الخطر</h2>
                   </div>

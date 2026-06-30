@@ -942,7 +942,7 @@ export default function Prices() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">إدارة الأسعار</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">إدارة الأسعار</h1>
         
         <div className="flex flex-wrap gap-2">
           <button 
@@ -955,7 +955,7 @@ export default function Prices() {
           {canImport && (
             <button 
               onClick={() => setActiveTab(activeTab === 'list' ? 'import' : 'list')}
-              className="flex items-center gap-2 bg-white border text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-50 transition"
+              className="flex items-center gap-2 bg-white dark:bg-dark-card border dark:border-dark-border text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
             >
               {activeTab === 'list' ? <Upload size={18} /> : <Search size={18} />}
               {activeTab === 'list' ? 'استيراد CSV' : 'عودة'}
@@ -973,7 +973,7 @@ export default function Prices() {
 
       {activeTab === 'list' && (
       <>
-        <div className="flex flex-wrap gap-4 w-full bg-white p-4 rounded-xl border">
+        <div className="flex flex-wrap gap-4 w-full bg-white dark:bg-dark-card p-4 rounded-xl border dark:border-dark-border">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute right-3 top-2.5 text-slate-400" size={20} />
             <input 
@@ -981,60 +981,60 @@ export default function Prices() {
               placeholder="بحث بالرمز أو الاسم..." 
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
-              className="w-full pl-3 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+              className="w-full pl-3 pr-10 py-2 border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white"
             />
           </div>
           <div className="relative flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">القطاع</label>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">القطاع</label>
             <select 
               value={sectorFilter}
               onChange={e => { setSectorFilter(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white text-sm"
+              className="w-full px-3 py-2 border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white bg-white dark:bg-dark-card text-sm"
             >
               <option value="all">كل القطاعات</option>
               {catalogSectors.map(s => <option key={s.sector_code} value={s.sector_code}>{s.name_ar}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">من تاريخ</label>
-            <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">من تاريخ</label>
+            <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">إلى تاريخ</label>
-            <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">إلى تاريخ</label>
+            <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
         </div>
 
         {selectedSymbols.length > 0 && (
-          <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 flex flex-wrap gap-3 items-center">
+          <div className="bg-primary-50 border dark:border-dark-border border-primary-200 rounded-xl p-3 flex flex-wrap gap-3 items-center">
              <div className="text-primary-800 font-bold px-2">
                تم تحديد {selectedSymbols.length}
              </div>
              <div className="h-6 w-px bg-primary-200 hidden md:block"></div>
              
-             <button onClick={() => setSelectedSymbols([])} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-600 hover:bg-slate-50 transition">
+             <button onClick={() => setSelectedSymbols([])} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition">
                إلغاء تحديد الكل
              </button>
 
              {(adminUser?.role === 'super_admin' || adminUser?.can_manage_prices) && (
                <>
-                 <button onClick={() => handleBulkAction('show')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-700 hover:bg-slate-50 transition flex items-center gap-1 disabled:opacity-50">
+                 <button onClick={() => handleBulkAction('show')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition flex items-center gap-1 disabled:opacity-50">
                    <Eye size={16} /> إظهار للزوار
                  </button>
-                 <button onClick={() => handleBulkAction('hide')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-slate-700 hover:bg-slate-50 transition flex items-center gap-1 disabled:opacity-50">
+                 <button onClick={() => handleBulkAction('hide')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition flex items-center gap-1 disabled:opacity-50">
                    <EyeOff size={16} /> إخفاء عن الزوار
                  </button>
                  
-                 <button onClick={() => handleBulkAction('activate')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-green-700 hover:bg-green-50 transition flex items-center gap-1 disabled:opacity-50">
+                 <button onClick={() => handleBulkAction('activate')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-green-700 hover:bg-green-50 transition flex items-center gap-1 disabled:opacity-50">
                    <Check size={16} /> تفعيل الحالة
                  </button>
-                 <button onClick={() => handleBulkAction('suspend')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-orange-700 hover:bg-orange-50 transition flex items-center gap-1 disabled:opacity-50">
+                 <button onClick={() => handleBulkAction('suspend')} disabled={bulkActionLoading} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-orange-700 hover:bg-orange-50 transition flex items-center gap-1 disabled:opacity-50">
                    <X size={16} /> تعطيل الحالة
                  </button>
                </>
              )}
 
-             <button onClick={exportSelectedToExcel} className="text-sm px-3 py-1.5 rounded-lg bg-white border text-blue-700 hover:bg-blue-50 transition flex items-center gap-1">
+             <button onClick={exportSelectedToExcel} className="text-sm px-3 py-1.5 rounded-lg bg-white dark:bg-dark-card border dark:border-dark-border text-blue-700 hover:bg-blue-50 transition flex items-center gap-1">
                <Download size={16} /> تصدير Excel
              </button>
 
@@ -1047,19 +1047,19 @@ export default function Prices() {
         )}
 
         {loading ? (
-           <div className="p-8 text-center text-slate-500">جاري التحميل...</div>
+           <div className="p-8 text-center text-slate-500 dark:text-slate-400">جاري التحميل...</div>
         ) : error ? (
            <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
              <div className="overflow-x-auto">
               <table className="w-full text-sm text-right">
-                 <thead className="bg-slate-50 text-slate-600 font-medium border-b">
+                 <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 font-medium border-b dark:border-dark-border">
                    <tr>
                      <th className="px-4 py-3 w-10 text-center">
                        <input 
                          type="checkbox" 
-                         className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                         className="rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
                          checked={commodities.length > 0 && commodities.every(c => selectedSymbols.includes(c.symbol))}
                          onChange={e => {
                            if (e.target.checked) {
@@ -1082,13 +1082,13 @@ export default function Prices() {
                      <th className="px-4 py-3 text-center">إجراءات</th>
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-slate-100">
+                 <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
                    {commodities.map(item => (
-                       <tr key={item.id} className={`hover:bg-slate-50/50 ${selectedSymbols.includes(item.symbol) ? 'bg-primary-50/30' : ''}`}>
+                       <tr key={item.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${selectedSymbols.includes(item.symbol) ? 'bg-primary-50/30 dark:bg-primary-900/30' : ''}`}>
                          <td className="px-4 py-3 text-center">
                            <input 
                              type="checkbox"
-                             className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                             className="rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
                              checked={selectedSymbols.includes(item.symbol)}
                              onChange={e => {
                                if (e.target.checked) {
@@ -1099,24 +1099,24 @@ export default function Prices() {
                              }}
                            />
                          </td>
-                         <td className="px-4 py-3 font-medium font-mono text-slate-900" dir="ltr">{item.symbol}</td>
-                         <td className="px-4 py-3 text-slate-800">{item.name_ar}</td>
+                         <td className="px-4 py-3 font-medium font-mono text-slate-900 dark:text-white" dir="ltr">{item.symbol}</td>
+                         <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{item.name_ar}</td>
                          <td className="px-4 py-3">
-                           <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs">{item.sector}</span>
+                           <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-md text-xs">{item.sector}</span>
                          </td>
                          <td className="px-4 py-3 font-mono font-medium" dir="ltr">
                            <span className={item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : ''}>
                              {item.price}
                            </span>
                          </td>
-                         <td className="px-4 py-3 text-center text-slate-500 text-xs">
+                         <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400 text-xs">
                            {new Date(item.updated_at).toLocaleString('ar-SA', { hour12: false, hour: '2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' })}
                          </td>
                          <td className="px-4 py-3 text-center">
                            <span className={`px-2 py-1 rounded-full text-xs ${
                              item.status === 'active' ? 'bg-green-100 text-green-700' : 
                              item.status === 'suspended' ? 'bg-orange-100 text-orange-700' : 
-                             'bg-slate-100 text-slate-700'
+                             'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                            }`}>
                              {item.status === 'active' ? 'نشط' : item.status === 'suspended' ? 'معلق' : 'مغلق'}
                            </span>
@@ -1140,7 +1140,7 @@ export default function Prices() {
                                  {deletingId === item.id ? 'تأكيد الحذف' : <Trash2 size={16} />}
                                </button>
                                {deletingId === item.id && (
-                                 <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 hover:text-slate-700">إلغاء</button>
+                                 <button onClick={() => setDeletingId(null)} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300">إلغاء</button>
                                )}
                              </div>
                            </div>
@@ -1150,14 +1150,14 @@ export default function Prices() {
                  </tbody>
               </table>
               {commodities.length === 0 && (
-                 <div className="p-8 text-center text-slate-500">لا يوجد بيانات مطابقة</div>
+                 <div className="p-8 text-center text-slate-500 dark:text-slate-400">لا يوجد بيانات مطابقة</div>
               )}
              </div>
              {totalPages > 1 && (
-               <div className="p-4 border-t flex justify-center gap-2 bg-slate-50">
-                 <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-50 text-sm">السابق</button>
-                 <span className="px-3 py-1 text-sm text-slate-600">صفحة {page} من {totalPages}</span>
-                 <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded bg-white hover:bg-slate-100 disabled:opacity-50 text-sm">التالي</button>
+               <div className="p-4 border-t dark:border-dark-border flex justify-center gap-2 bg-slate-50 dark:bg-dark-bg">
+                 <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border dark:border-dark-border rounded bg-white dark:bg-dark-card hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 disabled:opacity-50 text-sm">السابق</button>
+                 <span className="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">صفحة {page} من {totalPages}</span>
+                 <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border dark:border-dark-border rounded bg-white dark:bg-dark-card hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 disabled:opacity-50 text-sm">التالي</button>
                </div>
              )}
           </div>
@@ -1167,23 +1167,23 @@ export default function Prices() {
 
       {/* Import CSV Tab */}
       {activeTab === 'import' && canImport && (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="mb-6 border-b pb-4">
+        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border p-6">
+          <div className="mb-6 border-b dark:border-dark-border pb-4">
             <h2 className="text-lg font-bold mb-2">استيراد الأسعار من ملف CSV</h2>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               يجب أن يحتوي الملف على الأعمدة التالية كصف أول (Header):
               <br/>
-              <code className="bg-slate-100 px-2 py-1 rounded text-primary-700 font-mono text-xs inline-block mt-2" dir="ltr">symbol, name_ar, name_en, sector, price, unit, source</code>
+              <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-primary-700 font-mono text-xs inline-block mt-2" dir="ltr">symbol, name_ar, name_en, sector, price, unit, source</code>
             </p>
           </div>
 
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 dark:border-dark-border dark:border-dark-border border-dashed rounded-lg cursor-pointer bg-slate-50 dark:bg-dark-bg hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 transition">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <FileText className="w-8 h-8 text-slate-400 mb-2" />
-                        <p className="mb-2 text-sm text-slate-500"><span className="font-semibold">اضغط لاختيار ملف</span></p>
-                        <p className="text-xs text-slate-500">CSV فقط</p>
+                        <p className="mb-2 text-sm text-slate-500 dark:text-slate-400"><span className="font-semibold">اضغط لاختيار ملف</span></p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">CSV فقط</p>
                     </div>
                     <input 
                       type="file" 
@@ -1207,17 +1207,17 @@ export default function Prices() {
                     {importing ? 'جاري الاستيراد...' : 'تأكيد الاستيراد'}
                   </button>
                 </h3>
-                <div className="border rounded-lg max-h-60 overflow-y-auto bg-slate-50 p-2">
+                <div className="border dark:border-dark-border rounded-lg max-h-60 overflow-y-auto bg-slate-50 dark:bg-dark-bg p-2">
                    <table className="w-full text-xs text-right">
                      <thead>
-                       <tr className="text-slate-500 border-b">
+                       <tr className="text-slate-500 dark:text-slate-400 border-b dark:border-dark-border">
                          <th className="py-2 px-2">الرمز</th>
                          <th className="py-2 px-2">الاسم</th>
                          <th className="py-2 px-2">القطاع</th>
                          <th className="py-2 px-2">السعر الجديد</th>
                        </tr>
                      </thead>
-                     <tbody className="divide-y divide-slate-100">
+                     <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
                         {importData.slice(0, 10).map((row, i) => (
                            <tr key={i}>
                              <td className="py-2 px-2 font-mono" dir="ltr">{row.symbol}</td>
@@ -1234,7 +1234,7 @@ export default function Prices() {
             )}
 
             {importResult && (
-              <div className={`p-4 rounded-lg flex gap-3 ${importResult.failed > 0 || (importResult.warnings && importResult.warnings.length > 0) ? 'bg-orange-50 border border-orange-200 text-orange-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
+              <div className={`p-4 rounded-lg flex gap-3 ${importResult.failed > 0 || (importResult.warnings && importResult.warnings.length > 0) ? 'bg-orange-50 border dark:border-dark-border border-orange-200 text-orange-800' : 'bg-green-50 border dark:border-dark-border border-green-200 text-green-800'}`}>
                 {importResult.failed > 0 ? <AlertCircle className="mt-0.5 shrink-0" /> : <Check className="mt-0.5 shrink-0" />}
                 <div>
                   <h4 className="font-bold">اكتمل الاستيراد</h4>
@@ -1263,10 +1263,10 @@ export default function Prices() {
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b dark:border-dark-border">
               <h2 className="text-xl font-bold">{editingItem ? 'تعديل السعر' : 'إضافة سعر جديد يدوياً'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400"><X size={24} /></button>
             </div>
             
             <div className="p-4 overflow-y-auto flex-1">
@@ -1274,40 +1274,40 @@ export default function Prices() {
                 <form id="add-commodity-form" onSubmit={handleSaveSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                      <select disabled value={form.sector} className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">القطاع *</label>
+                      <select disabled value={form.sector} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-slate-50 dark:bg-dark-bg text-slate-500 dark:text-slate-400 outline-none dark:bg-dark-card dark:text-white">
                         <option value={form.sector}>{catalogSectors.find(s => s.sector_code === form.sector)?.name_ar || form.sector}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">السلعة *</label>
-                      <input type="text" readOnly disabled value={form.symbol} className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none uppercase" />
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">السلعة *</label>
+                      <input type="text" readOnly disabled value={form.symbol} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-slate-50 dark:bg-dark-bg text-slate-500 dark:text-slate-400 outline-none dark:bg-dark-card dark:text-white uppercase" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربي *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربي *</label>
                       <input type="text" readOnly disabled value={form.name_ar} 
-                        className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-slate-50 dark:bg-dark-bg text-slate-500 dark:text-slate-400 outline-none dark:bg-dark-card dark:text-white" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزي *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالإنجليزي *</label>
                       <input type="text" dir="ltr" readOnly disabled value={form.name_en} 
-                        className="w-full border rounded-lg px-3 py-2 bg-slate-50 text-slate-500 outline-none" />
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-slate-50 dark:bg-dark-bg text-slate-500 dark:text-slate-400 outline-none dark:bg-dark-card dark:text-white" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">السعر الحالي *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">السعر الحالي *</label>
                       <input type="number" step="0.0001" required value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})}
-                        className="w-full border rounded-lg px-3 py-2 font-mono focus:ring-primary-500 outline-none" dir="ltr" />
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 font-mono focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white" dir="ltr" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة (Unit)</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الوحدة (Unit)</label>
                       <select value={form.unit || ''} onChange={e => setForm({...form, unit: e.target.value})}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white bg-white dark:bg-dark-card">
                         <option value="">-- اختياري --</option>
                         {catalogUnits.map((u: UnitsCatalog) => (
                           <option key={u.id} value={u.unit_code}>{u.unit_ar} ({u.unit_code})</option>
@@ -1318,17 +1318,17 @@ export default function Prices() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">المصدر (Source)</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">المصدر (Source)</label>
                       <input type="text" value={form.source || ''} onChange={e => setForm({...form, source: e.target.value})}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none" placeholder="Bloomberg, OANDA..." />
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white" placeholder="Bloomberg, OANDA..." />
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 mt-2">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">الحالة</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الحالة</label>
                       <select value={form.status} onChange={e => setForm({...form, status: e.target.value as any})}
-                        className="w-full border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none bg-white">
+                        className="w-full border dark:border-dark-border rounded-lg px-3 py-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white bg-white dark:bg-dark-card">
                         <option value="active">نشط</option>
                         <option value="suspended">معلق</option>
                         <option value="closed">مغلق</option>
@@ -1336,15 +1336,15 @@ export default function Prices() {
                     </div>
                     <div className="flex items-center gap-2 pt-6">
                       <input type="checkbox" id="add_visible" checked={form.is_visible} onChange={e => setForm({...form, is_visible: e.target.checked})}
-                        className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-                      <label htmlFor="add_visible" className="text-sm font-medium text-slate-700">تفعيل الظهور للزوار</label>
+                        className="w-4 h-4 rounded border-slate-300 dark:border-dark-border dark:border-dark-border text-primary-600 focus:ring-primary-500" />
+                      <label htmlFor="add_visible" className="text-sm font-medium text-slate-700 dark:text-slate-300">تفعيل الظهور للزوار</label>
                     </div>
                   </div>
                 </form>
               ) : (
                 <div className="space-y-6">
                   {bulkResults && (
-                    <div className={`p-4 rounded-lg flex gap-3 ${bulkResults.failed > 0 ? 'bg-orange-50 border border-orange-200 text-orange-800' : 'bg-green-50 border border-green-200 text-green-800'}`}>
+                    <div className={`p-4 rounded-lg flex gap-3 ${bulkResults.failed > 0 ? 'bg-orange-50 border dark:border-dark-border border-orange-200 text-orange-800' : 'bg-green-50 border dark:border-dark-border border-green-200 text-green-800'}`}>
                       {bulkResults.failed > 0 ? <AlertCircle className="mt-0.5 shrink-0" /> : <Check className="mt-0.5 shrink-0" />}
                       <div>
                         <h4 className="font-bold">نتيجة الحفظ</h4>
@@ -1367,11 +1367,11 @@ export default function Prices() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">اختر القطاع للتحديث *</label>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اختر القطاع للتحديث *</label>
                       <select 
                         value={bulkSector}
                         onChange={e => fetchBulkItems(e.target.value)}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none bg-white"
+                        className="w-full px-3 py-2 border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white bg-white dark:bg-dark-card"
                       >
                         <option value="">-- اختر القطاع --</option>
                         {catalogSectors.map(s => (
@@ -1381,7 +1381,7 @@ export default function Prices() {
                     </div>
                     {bulkItems.length > 0 && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">المصدر العام (يطبق على الكل)</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">المصدر العام (يطبق على الكل)</label>
                         <input 
                           type="text" 
                           value={globalSource}
@@ -1389,20 +1389,20 @@ export default function Prices() {
                             setGlobalSource(e.target.value);
                             setBulkItems(bulkItems.map(item => ({ ...item, source: e.target.value })));
                           }}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                          className="w-full px-3 py-2 border dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:bg-dark-card dark:text-white"
                         />
                       </div>
                     )}
                   </div>
 
                   {bulkSector && bulkItems.length === 0 && !loading && (
-                    <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border">
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-dark-bg rounded-lg border dark:border-dark-border">
                       لا توجد سلع مسجلة في هذا القطاع.
                     </div>
                   )}
 
                   {bulkItems.length > 0 && (
-                    <div className="space-y-3 border rounded-xl p-3 bg-slate-50">
+                    <div className="space-y-3 border dark:border-dark-border rounded-xl p-3 bg-slate-50 dark:bg-dark-bg">
                       <div className="flex flex-col md:flex-row gap-2 justify-between items-start md:items-center">
                         <div className="relative w-full md:w-1/2">
                           <Search className="absolute right-3 top-2.5 text-slate-400" size={18} />
@@ -1411,28 +1411,28 @@ export default function Prices() {
                             placeholder="ابحث داخل القطاع بالرمز أو الاسم..."
                             value={searchCommodity}
                             onChange={e => setSearchCommodity(e.target.value)}
-                            className="w-full pl-3 pr-10 py-2 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
+                            className="w-full pl-3 pr-10 py-2 text-sm border dark:border-dark-border rounded-lg outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500"
                           />
                         </div>
                         <div className="flex gap-2">
                           <button 
                             onClick={() => setBulkItems(bulkItems.map(item => ({...item, new_price: ''})))}
-                            className="px-3 py-1.5 text-xs font-medium border bg-white text-slate-600 rounded hover:bg-slate-50 transition"
+                            className="px-3 py-1.5 text-xs font-medium border dark:border-dark-border bg-white dark:bg-dark-card text-slate-600 dark:text-slate-400 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
                           >
                             مسح الأسعار
                           </button>
                           <button 
                             onClick={() => setBulkItems(bulkItems.map(item => ({...item, new_price: item.current_price > 0 ? item.current_price.toString() : ''})))}
-                            className="px-3 py-1.5 text-xs font-medium border bg-white text-slate-600 rounded hover:bg-slate-50 transition"
+                            className="px-3 py-1.5 text-xs font-medium border dark:border-dark-border bg-white dark:bg-dark-card text-slate-600 dark:text-slate-400 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
                           >
                             نسخ السعر الحالي
                           </button>
                         </div>
                       </div>
 
-                      <div className="border bg-white rounded-lg overflow-x-auto max-h-[45vh]">
+                      <div className="border dark:border-dark-border bg-white dark:bg-dark-card rounded-lg overflow-x-auto max-h-[45vh]">
                         <table className="w-full text-sm text-right">
-                          <thead className="bg-slate-100 text-slate-700 sticky top-0 border-b z-10">
+                          <thead className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 sticky top-0 border-b dark:border-dark-border z-10">
                             <tr>
                               <th className="px-3 py-2 font-medium">الرمز</th>
                               <th className="px-3 py-2 font-medium">الاسم</th>
@@ -1442,7 +1442,7 @@ export default function Prices() {
                               <th className="px-3 py-2 font-medium min-w-[100px]">المصدر</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
                             {bulkItems.filter(item => {
                                if (!searchCommodity) return true;
                                const searchLower = searchCommodity.toLowerCase();
@@ -1452,11 +1452,11 @@ export default function Prices() {
                             }).map((item) => {
                                const originalIndex = bulkItems.findIndex(b => b.symbol === item.symbol);
                                return (
-                                <tr key={item.symbol} className={`${item.new_price !== '' ? 'bg-primary-50/30' : 'hover:bg-slate-50'}`}>
+                                <tr key={item.symbol} className={`${item.new_price !== '' ? 'bg-primary-50/30 dark:bg-primary-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                                   <td className="px-3 py-2 font-mono font-medium text-xs" dir="ltr">{item.symbol}</td>
                                   <td className="px-3 py-2 font-medium text-xs truncate max-w-[150px]" title={item.name_ar}>{item.name_ar}</td>
-                                  <td className="px-3 py-2 text-slate-500 text-xs">{item.unit || '-'}</td>
-                                  <td className="px-3 py-2 text-center font-mono text-slate-500 text-xs" dir="ltr">
+                                  <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-xs">{item.unit || '-'}</td>
+                                  <td className="px-3 py-2 text-center font-mono text-slate-500 dark:text-slate-400 text-xs" dir="ltr">
                                     {item.current_price > 0 ? item.current_price : '-'}
                                   </td>
                                   <td className="px-3 py-2">
@@ -1470,7 +1470,7 @@ export default function Prices() {
                                         newItems[originalIndex].new_price = e.target.value;
                                         setBulkItems(newItems);
                                       }}
-                                      className={`w-full px-2 py-1.5 text-xs border rounded outline-none font-mono focus:ring-2 focus:ring-primary-500 ${item.new_price !== '' ? 'bg-white border-primary-300' : 'bg-slate-50'}`}
+                                      className={`w-full px-2 py-1.5 text-xs border dark:border-dark-border rounded outline-none dark:bg-dark-card dark:text-white font-mono focus:ring-2 focus:ring-primary-500 ${item.new_price !== '' ? 'bg-white dark:bg-dark-card border-primary-300' : 'bg-slate-50 dark:bg-dark-bg'}`}
                                       dir="ltr"
                                     />
                                   </td>
@@ -1483,7 +1483,7 @@ export default function Prices() {
                                         newItems[originalIndex].source = e.target.value;
                                         setBulkItems(newItems);
                                       }}
-                                      className="w-full px-2 py-1.5 text-xs border rounded outline-none focus:ring-1 focus:ring-primary-500"
+                                      className="w-full px-2 py-1.5 text-xs border dark:border-dark-border rounded outline-none dark:bg-dark-card dark:text-white focus:ring-1 focus:ring-primary-500"
                                       placeholder="المصدر"
                                     />
                                   </td>
@@ -1499,11 +1499,11 @@ export default function Prices() {
               )}
             </div>
             
-            <div className="p-4 border-t flex justify-end gap-3 bg-slate-50 rounded-b-xl">
+            <div className="p-4 border-t dark:border-dark-border flex justify-end gap-3 bg-slate-50 dark:bg-dark-bg rounded-b-xl">
               <button 
                 type="button" 
                 onClick={() => setIsModalOpen(false)} 
-                className="px-4 py-2 border rounded-lg text-sm bg-white hover:bg-slate-50 transition"
+                className="px-4 py-2 border dark:border-dark-border rounded-lg text-sm bg-white dark:bg-dark-card hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg transition"
               >
                 إلغاء
               </button>
@@ -1533,10 +1533,10 @@ export default function Prices() {
 
       {isQuickAddCommodityOpen && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">إضافة سلعة كمرجع سريع</h3>
-              <button disabled={savingQuick} onClick={() => setIsQuickAddCommodityOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b dark:border-dark-border flex justify-between items-center bg-slate-50 dark:bg-dark-bg">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">إضافة سلعة كمرجع سريع</h3>
+              <button disabled={savingQuick} onClick={() => setIsQuickAddCommodityOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">
                 <X size={20} />
               </button>
             </div>
@@ -1544,33 +1544,33 @@ export default function Prices() {
               <form onSubmit={handleQuickSaveCommodity} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الرمز *</label>
-                    <input required type="text" value={quickCommodityForm.symbol} onChange={e => setQuickCommodityForm({...quickCommodityForm, symbol: e.target.value.toUpperCase()})} className="w-full border rounded-lg px-3 py-2 uppercase" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الرمز *</label>
+                    <input required type="text" value={quickCommodityForm.symbol} onChange={e => setQuickCommodityForm({...quickCommodityForm, symbol: e.target.value.toUpperCase()})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 uppercase" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الوحدة *</label>
-                    <input required type="text" value={quickCommodityForm.default_unit} onChange={e => setQuickCommodityForm({...quickCommodityForm, default_unit: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الوحدة *</label>
+                    <input required type="text" value={quickCommodityForm.default_unit} onChange={e => setQuickCommodityForm({...quickCommodityForm, default_unit: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
-                    <input required type="text" value={quickCommodityForm.name_ar} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربية *</label>
+                    <input required type="text" value={quickCommodityForm.name_ar} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_ar: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
-                    <input required type="text" value={quickCommodityForm.name_en} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالإنجليزية *</label>
+                    <input required type="text" value={quickCommodityForm.name_en} onChange={e => setQuickCommodityForm({...quickCommodityForm, name_en: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">القطاع *</label>
-                  <select required value={quickCommodityForm.sector} onChange={e => setQuickCommodityForm({...quickCommodityForm, sector: e.target.value})} className="w-full border rounded-lg px-3 py-2 bg-white">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">القطاع *</label>
+                  <select required value={quickCommodityForm.sector} onChange={e => setQuickCommodityForm({...quickCommodityForm, sector: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 bg-white dark:bg-dark-card">
                     <option value="">-- اختر القطاع --</option>
                     {catalogSectors.map(sec => <option key={sec.sector_code} value={sec.sector_code}>{sec.name_ar} - {sec.sector_code}</option>)}
                   </select>
                 </div>
                 <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsQuickAddCommodityOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="button" onClick={() => setIsQuickAddCommodityOpen(false)} className="px-4 py-2 border dark:border-dark-border rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg">إلغاء</button>
                   <button type="submit" disabled={savingQuick} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
                     {savingQuick ? 'جاري الحفظ...' : 'إضافة واستخدام'}
                   </button>
@@ -1583,29 +1583,29 @@ export default function Prices() {
 
       {isQuickAddUnitOpen && (
         <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-800">إضافة وحدة سريعة</h3>
-              <button disabled={savingQuick} onClick={() => setIsQuickAddUnitOpen(false)} className="text-slate-400 hover:text-slate-600">
+          <div className="bg-white dark:bg-dark-card rounded-xl shadow-lg w-full max-w-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b dark:border-dark-border flex justify-between items-center bg-slate-50 dark:bg-dark-bg">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">إضافة وحدة سريعة</h3>
+              <button disabled={savingQuick} onClick={() => setIsQuickAddUnitOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-slate-400">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6">
               <form onSubmit={handleQuickSaveUnit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الكود (مثال: barrel) *</label>
-                  <input required type="text" value={quickUnitForm.unit_code} onChange={e => setQuickUnitForm({...quickUnitForm, unit_code: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الكود (مثال: barrel) *</label>
+                  <input required type="text" value={quickUnitForm.unit_code} onChange={e => setQuickUnitForm({...quickUnitForm, unit_code: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالعربية *</label>
-                  <input required type="text" value={quickUnitForm.unit_ar} onChange={e => setQuickUnitForm({...quickUnitForm, unit_ar: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالعربية *</label>
+                  <input required type="text" value={quickUnitForm.unit_ar} onChange={e => setQuickUnitForm({...quickUnitForm, unit_ar: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">الاسم بالإنجليزية *</label>
-                  <input required type="text" value={quickUnitForm.unit_en} onChange={e => setQuickUnitForm({...quickUnitForm, unit_en: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم بالإنجليزية *</label>
+                  <input required type="text" value={quickUnitForm.unit_en} onChange={e => setQuickUnitForm({...quickUnitForm, unit_en: e.target.value})} className="w-full border dark:border-dark-border rounded-lg px-3 py-2" />
                 </div>
                 <div className="pt-4 flex justify-end gap-3">
-                  <button type="button" onClick={() => setIsQuickAddUnitOpen(false)} className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">إلغاء</button>
+                  <button type="button" onClick={() => setIsQuickAddUnitOpen(false)} className="px-4 py-2 border dark:border-dark-border rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg">إلغاء</button>
                   <button type="submit" disabled={savingQuick} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">
                     {savingQuick ? 'جاري الحفظ...' : 'إضافة واستخدام'}
                   </button>

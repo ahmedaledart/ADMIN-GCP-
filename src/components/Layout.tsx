@@ -11,14 +11,18 @@ import {
   Menu,
   X,
   Users,
-  History
+  History,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import { useState, ReactNode } from 'react';
 import { cn } from '../lib/utils';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { adminUser, signOut } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -39,38 +43,53 @@ export default function Layout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-dark-bg flex flex-col md:flex-row transition-colors duration-200">
       {/* Mobile header */}
-      <div className="md:hidden flex items-center justify-between bg-white border-b p-4">
+      <div className="md:hidden flex items-center justify-between bg-white dark:bg-dark-card border-b dark:border-dark-border dark:border-dark-border p-4 transition-colors duration-200">
         <img 
           src="https://i.postimg.cc/bwVPbtwT/cropped-NEW-LOGO-LTN-06-1-removebg-preview.png" 
           alt="Logo" 
           className="h-10 w-auto"
         />
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="text-slate-500 hover:text-slate-700"
-        >
-          {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+          </button>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-300"
+          >
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
       </div>
 
       {/* Sidebar */}
       <div className={cn(
-        "bg-white w-full md:w-72 border-l flex-col transition-all duration-300 z-10",
+        "bg-white dark:bg-dark-card w-full md:w-72 border-l dark:border-dark-border dark:border-dark-border flex-col transition-all duration-300 z-10",
         isMobileMenuOpen ? "flex fixed inset-0 top-[73px]" : "hidden md:flex sticky top-0 h-screen"
       )}>
-        <div className="hidden md:flex h-24 items-center justify-center border-b px-4">
+        <div className="hidden md:flex h-24 items-center justify-center border-b dark:border-dark-border dark:border-dark-border px-4 relative">
           <img 
             src="https://i.postimg.cc/bwVPbtwT/cropped-NEW-LOGO-LTN-06-1-removebg-preview.png" 
             alt="Logo" 
             className="h-14 w-auto drop-shadow-sm"
           />
+          <button
+            onClick={toggleTheme}
+            className="absolute left-4 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title={theme === 'dark' ? "الوضع الفاتح" : "الوضع الداكن"}
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
         </div>
         
-        <div className="p-5 border-b">
-          <p className="text-base font-bold text-slate-800">{adminUser?.full_name || adminUser?.email}</p>
-          <p className="text-sm font-medium text-slate-500 mt-1">{adminUser?.role === 'super_admin' ? 'Super Admin' : adminUser?.role}</p>
+        <div className="p-5 border-b dark:border-dark-border dark:border-dark-border">
+          <p className="text-base font-bold text-slate-800 dark:text-slate-200 dark:text-white">{adminUser?.full_name || adminUser?.email}</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{adminUser?.role === 'super_admin' ? 'Super Admin' : adminUser?.role}</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6">
@@ -85,11 +104,11 @@ export default function Layout({ children }: { children: ReactNode }) {
                     className={cn(
                       "flex items-center gap-4 px-4 py-3 rounded-lg text-base font-bold transition-all duration-200",
                       isActive 
-                        ? "bg-primary-50 text-primary-700 shadow-sm border border-primary-100" 
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        ? "bg-primary-50 dark:bg-primary-900/50 text-primary-700 dark:text-primary-400 shadow-sm border dark:border-dark-border border-primary-100 dark:border-primary-800/50" 
+                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-800 hover:text-slate-900 dark:text-white dark:hover:text-white"
                     )}
                   >
-                    <item.icon size={22} className={isActive ? "text-primary-600" : "text-slate-500"} />
+                    <item.icon size={22} className={isActive ? "text-primary-600 dark:text-primary-400" : "text-slate-500 dark:text-slate-400 dark:text-slate-500 dark:text-slate-400"} />
                     {item.name}
                   </Link>
                 </li>
@@ -98,10 +117,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           </ul>
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t dark:border-dark-border dark:border-dark-border">
           <button
             onClick={handleSignOut}
-            className="flex w-full items-center gap-4 px-4 py-3 rounded-lg text-base font-bold text-red-600 hover:bg-red-50 transition-colors"
+            className="flex w-full items-center gap-4 px-4 py-3 rounded-lg text-base font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
           >
             <LogOut size={22} />
             تسجيل الخروج
@@ -110,7 +129,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 overflow-x-hidden p-4 md:p-8">
+      <main className="flex-1 overflow-x-hidden p-4 md:p-8 text-slate-900 dark:text-white">
         {children}
       </main>
     </div>

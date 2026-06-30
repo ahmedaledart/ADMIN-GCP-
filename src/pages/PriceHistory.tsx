@@ -175,7 +175,7 @@ export default function PriceHistory() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">أرشيف الأسعار</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">أرشيف الأسعار</h1>
         <button 
           onClick={exportExcel}
           className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
@@ -185,33 +185,33 @@ export default function PriceHistory() {
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-xl border space-y-4 shadow-sm">
+      <div className="bg-white dark:bg-dark-card p-4 rounded-xl border dark:border-dark-border space-y-4 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">القطاع</label>
-            <select value={sectorFilter} onChange={e => { setSectorFilter(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">القطاع</label>
+            <select value={sectorFilter} onChange={e => { setSectorFilter(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm">
               <option value="all">كل القطاعات</option>
               {sectors.map(s => <option key={s.sector_code} value={s.sector_code}>{s.name_ar}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">السلعة</label>
-            <select value={symbolFilter} onChange={e => { setSymbolFilter(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">السلعة</label>
+            <select value={symbolFilter} onChange={e => { setSymbolFilter(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm">
               <option value="all">كل السلع</option>
               {catalog.map(c => <option key={c.symbol} value={c.symbol}>{c.symbol} - {c.name_ar}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">من تاريخ</label>
-            <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">من تاريخ</label>
+            <input type="date" value={fromDate} onChange={e => { setFromDate(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">إلى تاريخ</label>
-            <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">إلى تاريخ</label>
+            <input type="date" value={toDate} onChange={e => { setToDate(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">طريقة التحديث</label>
-            <select value={updateMethodFilter} onChange={e => { setUpdateMethodFilter(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">طريقة التحديث</label>
+            <select value={updateMethodFilter} onChange={e => { setUpdateMethodFilter(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm">
               <option value="all">الكل</option>
               <option value="admin">يدوي (Admin)</option>
               <option value="csv">استيراد (CSV)</option>
@@ -219,21 +219,21 @@ export default function PriceHistory() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">الأدمن (البريد)</label>
-            <input type="text" placeholder="بحث بالبريد" value={adminEmailFilter} onChange={e => { setAdminEmailFilter(e.target.value); setPage(1); }} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">الأدمن (البريد)</label>
+            <input type="text" placeholder="بحث بالبريد" value={adminEmailFilter} onChange={e => { setAdminEmailFilter(e.target.value); setPage(1); }} className="w-full border dark:border-dark-border rounded-lg px-3 py-2 outline-none dark:bg-dark-card dark:text-white focus:ring-2 focus:ring-primary-500 text-sm" />
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-slate-500">جاري التحميل...</div>
+        <div className="p-8 text-center text-slate-500 dark:text-slate-400">جاري التحميل...</div>
       ) : error ? (
         <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border dark:border-dark-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
-              <thead className="bg-slate-50 text-slate-600 font-medium border-b">
+              <thead className="bg-slate-50 dark:bg-dark-bg text-slate-600 dark:text-slate-400 font-medium border-b dark:border-dark-border">
                 <tr>
                   <th className="px-4 py-3">التاريخ والوقت</th>
                   <th className="px-4 py-3">الرمز</th>
@@ -244,21 +244,21 @@ export default function PriceHistory() {
                   <th className="px-4 py-3 text-center">الأدمن</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-dark-border dark:border-dark-border">
                 {history.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="px-4 py-3 text-slate-500 text-xs" dir="ltr">
+                  <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 dark:bg-dark-bg/50">
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs" dir="ltr">
                       {new Date(item.recorded_at).toLocaleString('en-US', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="px-4 py-3 font-medium font-mono text-slate-900" dir="ltr">{item.symbol}</td>
-                    <td className="px-4 py-3 text-slate-800">{item.name_ar}</td>
+                    <td className="px-4 py-3 font-medium font-mono text-slate-900 dark:text-white" dir="ltr">{item.symbol}</td>
+                    <td className="px-4 py-3 text-slate-800 dark:text-slate-200">{item.name_ar}</td>
                     <td className="px-4 py-3 font-mono font-medium" dir="ltr">
                       <span className={item.trend === 'up' ? 'text-green-600' : item.trend === 'down' ? 'text-red-600' : ''}>
                         {item.price}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center font-mono text-xs" dir="ltr">
-                      <span className={item.change_value > 0 ? 'text-green-600' : item.change_value < 0 ? 'text-red-600' : 'text-slate-500'}>
+                      <span className={item.change_value > 0 ? 'text-green-600' : item.change_value < 0 ? 'text-red-600' : 'text-slate-500 dark:text-slate-400'}>
                         {item.change_value > 0 ? '+' : ''}{item.change_value} ({item.change_percent}%)
                       </span>
                     </td>
@@ -266,19 +266,19 @@ export default function PriceHistory() {
                       <span className={`px-2 py-1 rounded-full ${
                         item.update_method === 'csv' ? 'bg-blue-100 text-blue-700' :
                         item.update_method === 'admin' ? 'bg-purple-100 text-purple-700' :
-                        'bg-slate-100 text-slate-700'
+                        'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                       }`}>
                         {item.update_method}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center text-xs text-slate-500">
+                    <td className="px-4 py-3 text-center text-xs text-slate-500 dark:text-slate-400">
                       {item.admin_email || '-'}
                     </td>
                   </tr>
                 ))}
                 {history.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">لا يوجد بيانات مطابقة</td>
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500 dark:text-slate-400">لا يوجد بيانات مطابقة</td>
                   </tr>
                 )}
               </tbody>
@@ -286,10 +286,10 @@ export default function PriceHistory() {
           </div>
           
           {totalPages > 1 && (
-            <div className="p-4 border-t flex justify-center gap-2">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border rounded hover:bg-slate-50 disabled:opacity-50">السابق</button>
-              <span className="px-3 py-1 text-sm text-slate-600">صفحة {page} من {totalPages}</span>
-              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border rounded hover:bg-slate-50 disabled:opacity-50">التالي</button>
+            <div className="p-4 border-t dark:border-dark-border flex justify-center gap-2">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border dark:border-dark-border rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg disabled:opacity-50">السابق</button>
+              <span className="px-3 py-1 text-sm text-slate-600 dark:text-slate-400">صفحة {page} من {totalPages}</span>
+              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border dark:border-dark-border rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:bg-dark-bg disabled:opacity-50">التالي</button>
             </div>
           )}
         </div>

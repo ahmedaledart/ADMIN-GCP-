@@ -6,6 +6,7 @@
 import { useEffect, ReactNode } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useThemeStore } from './store/themeStore';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -28,7 +29,7 @@ function ProtectedRoute({
   const { session, adminUser, isLoading } = useAuthStore();
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-dark-bg">
       <div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
     </div>;
   }
@@ -47,10 +48,19 @@ function ProtectedRoute({
 
 export default function App() {
   const { checkAuth } = useAuthStore();
+  const { theme } = useThemeStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   return (
     <HashRouter>
